@@ -1,5 +1,5 @@
 ---
-name: x402-payment-demo
+name: x402-tron-payment-demo
 description: "Demo of x402 payment protocol by fetching a protected image. Triggers: 'demo x402-payment'"
 version: 1.0.2
 author: bankofai
@@ -22,7 +22,7 @@ Simply tell the Agent:
 
 ## Workflow
 
-1.  **Request Resource**: When triggered, follow the instructions provided by the `x402-payment-tron` skill to fetch the protected resource. **Use Tron Nile by default**:
+1.  **Request Resource**: When triggered, follow the instructions provided by the `x402-tron-payment` skill to fetch the protected resource. **Use Tron Nile by default**:
     - **Tron Nile (Default)**: `https://x402-tron-demo.bankofai.io/protected-nile`
     - **Tron Shasta**: `https://x402-tron-demo.bankofai.io/protected-shasta`
     - **Tron Mainnet**: `https://x402-tron-demo.bankofai.io/protected-mainnet`

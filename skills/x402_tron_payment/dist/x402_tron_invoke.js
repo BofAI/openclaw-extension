@@ -37755,7 +37755,7 @@ module.exports = /*#__PURE__*/JSON.parse('{"application/1d-interleaved-parityfec
 /************************************************************************/
 var __webpack_exports__ = {};
 
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/client/x402Client.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/client/x402Client.js
 /**
  * X402Client - Core payment client for x402 protocol
  *
@@ -37873,13 +37873,13 @@ class X402Client {
     }
 }
 //# sourceMappingURL=x402Client.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/client/index.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/client/index.js
 /**
  * Client module exports
  */
 
 //# sourceMappingURL=index.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/utils/encoding.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/utils/encoding.js
 /**
  * Encoding utilities for x402 protocol
  */
@@ -37985,14 +37985,14 @@ function paymentIdToBytes(paymentId) {
     return hexToBytes(paymentId);
 }
 //# sourceMappingURL=encoding.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/utils/index.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/utils/index.js
 /**
  * Utility exports
  */
 
 
 //# sourceMappingURL=index.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/abi.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/abi.js
 /**
  * ABI and EIP-712 type definitions for x402 protocol
  * Shared across all mechanisms
@@ -38072,7 +38072,7 @@ const ERC20_ABI = [
     },
 ];
 //# sourceMappingURL=abi.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/config.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/config.js
 /**
  * Network configuration for x402 protocol
  * Centralized configuration for contract addresses and chain IDs
@@ -38124,7 +38124,7 @@ function getZeroAddress(network) {
     return TRON_ZERO_ADDRESS;
 }
 //# sourceMappingURL=config.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/address.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/address.js
 /**
  * Address conversion utilities for x402 protocol
  * Handles conversion between TRON Base58 and EVM hex formats
@@ -38279,7 +38279,7 @@ function toBase58(addr) {
     return result || 'T';
 }
 //# sourceMappingURL=address.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/http/client.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/http/client.js
 /**
  * X402FetchClient - Fetch-based HTTP client with automatic 402 payment handling
  */
@@ -38363,7 +38363,7 @@ class X402FetchClient {
     }
 }
 //# sourceMappingURL=client.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/mechanisms/exact.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/mechanisms/exact.js
 /**
  * ExactTronClientMechanism - TRON client mechanism for "exact" payment scheme
  *
@@ -38481,7 +38481,7 @@ class ExactTronClientMechanism {
     }
 }
 //# sourceMappingURL=exact.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/signers/signer.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/signers/signer.js
 /**
  * TronClientSigner - TRON client signer for x402 protocol
  *
@@ -38637,7 +38637,7 @@ class TronClientSigner {
     }
 }
 //# sourceMappingURL=signer.js.map
-;// CONCATENATED MODULE: ./node_modules/@open-aibank/x402-tron/dist/index.js
+;// CONCATENATED MODULE: ./node_modules/@bankofai/x402-tron/dist/index.js
 /**
  * x402-tron TypeScript SDK
  *
@@ -38696,7 +38696,7 @@ async function findPrivateKey() {
             }
         }
     }
-    // 3. Check mcporter config (AIBank standard)
+    // 3. Check mcporter config (BankofAI standard)
     const mcporterPath = external_path_.join(external_os_namespaceObject.homedir(), '.mcporter', 'mcporter.json');
     if (external_fs_.existsSync(mcporterPath)) {
         try {
@@ -38745,7 +38745,7 @@ async function findApiKey() {
             }
         }
     }
-    // 3. Check mcporter config (AIBank standard)
+    // 3. Check mcporter config (BankofAI standard)
     const mcporterPath = external_path_.join(external_os_namespaceObject.homedir(), '.mcporter', 'mcporter.json');
     if (external_fs_.existsSync(mcporterPath)) {
         try {

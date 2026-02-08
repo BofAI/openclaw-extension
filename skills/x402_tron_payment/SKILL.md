@@ -1,5 +1,5 @@
 ---
-name: x402-payment-tron
+name: x402-tron-payment
 description: "Pay for x402-enabled Agent endpoints using TRC20 tokens (USDT/USDD) on TRON"
 version: 1.1.0
 author: bankofai
