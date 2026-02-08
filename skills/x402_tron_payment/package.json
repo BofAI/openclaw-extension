@@ -1,5 +1,5 @@
 {
-  "name": "x402-payment-tron-skill",
+  "name": "x402-tron-payment-skill",
   "version": "1.0.1",
   "description": "x402 payment skill for TRON",
   "type": "module",

@@ -19,7 +19,7 @@ The bridge between your LLM and the TRON blockchain.
   - **Network**: Monitor chain state, block height, and energy costs.
 - **Integration**: Works out-of-the-box with any MCP-compliant client (Claude Desktop, Cursor, etc.).
 
-### 2. 💳 x402-payment-tron
+### 2. 💳 x402-tron-payment
 The financial layer for the agent economy.
 - **What it is**: A specialized agent skill implementing the **HTTP 402** protocol.
 - **Use Case**: Enables agents to consume paid APIs seamlessly. When an agent hits a paywall (402 status), this skill intercepts the request, negotiates the price, pays in USDT, and retries the request—all autonomously.
@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/he
 
 The installer will:
 1.  Set up the `mcp-server-tron` in your `mcporter` configuration.
-2.  Install the `x402-payment-tron` skill.
+2.  Install the `x402-tron-payment` skill.
 3.  Securely configure your TRON credentials locally.
 
 ## 🔗 Links

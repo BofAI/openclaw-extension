@@ -290,8 +290,8 @@ mkdir -p "$MCP_CONFIG_DIR"
 # --- Step 1: Skills (Multiselect) ---
 
 # Define Skill Options
-SKILL_OPTIONS=("mcporter - MCP server manager and configuration tool" "x402-payment-tron - Enables agent payments on TRON network (x402 protocol)" "x402-payment-demo - Demo of x402 payment protocol by fetching a protected image.")
-SKILL_IDS=("mcporter" "x402-payment-tron" "x402-payment-demo")
+SKILL_OPTIONS=("mcporter - MCP server manager and configuration tool" "x402-tron-payment - Enables agent payments on TRON network (x402 protocol)" "x402-tron-payment-demo - Demo of x402 payment protocol by fetching a protected image.")
+SKILL_IDS=("mcporter" "x402-tron-payment" "x402-tron-payment-demo")
 
 if [ ${#SKILL_OPTIONS[@]} -gt 0 ]; then
     echo ""
