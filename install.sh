@@ -100,6 +100,19 @@ check_env() {
         echo -e "${ERROR}Error: Neither 'python3' nor 'python' found (required for JSON processing).${NC}"
         exit 1
     fi
+    
+    # Check if OpenClaw is installed (mcporter config directory should exist)
+    if [ ! -d "$HOME/.openclaw" ]; then
+        echo -e "${WARN}Warning: OpenClaw doesn't appear to be installed.${NC}"
+        echo -e "${WARN}This installer requires OpenClaw to be installed first.${NC}"
+        echo -e "${INFO}Install OpenClaw from: https://github.com/openclaw${NC}"
+        echo ""
+        echo -ne "${INFO}?${NC} Continue anyway? ${MUTED}(y/N)${NC}: "
+        read -r continue_choice <&3
+        if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
+            exit 0
+        fi
+    fi
 }
 
 # --- JSON Helper ---
@@ -394,26 +407,6 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-# --- Step 0: Install mcporter ---
-
-echo -e "${BOLD}Step 0: Installing mcporter (MCP Manager)${NC}"
-echo ""
-echo -e "${INFO}Installing mcporter globally...${NC}"
-
-if npm list -g mcporter &> /dev/null; then
-    echo -e "${SUCCESS}✓ mcporter is already installed${NC}"
-else
-    if npm install -g mcporter; then
-        echo -e "${SUCCESS}✓ mcporter installed successfully${NC}"
-    else
-        echo -e "${ERROR}✗ Failed to install mcporter${NC}"
-        echo -e "${WARN}You may need to run with sudo or fix npm permissions${NC}"
-        exit 1
-    fi
-fi
-
-echo ""
-
 # --- Step 1: MCP Server Configuration ---
 
 echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
@@ -578,7 +571,6 @@ echo -e "${ACCENT}${BOLD}══════════════════�
 echo ""
 
 if [ "$SKIP_MCP" = false ]; then
-    echo -e "${SUCCESS}✓${NC} ${BOLD}mcporter installed${NC}"
     echo -e "${SUCCESS}✓${NC} ${BOLD}MCP Server configured${NC}"
     echo -e "  ${INFO}Config file: ${BOLD}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}→ Secure your config: ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"

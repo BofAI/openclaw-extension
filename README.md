@@ -37,11 +37,13 @@ The installer automatically fetches skills from the [skills-tron](https://github
 ## 🛠 Installation
 
 ### Prerequisites
-- **OpenClaw** (Your personal, open-source AI assistant)
+- **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
+
+**Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
 ### Quick Start
 
@@ -62,10 +64,6 @@ cd openclaw-extension
 ### Installation Steps
 
 The interactive installer will guide you through:
-
-**Step 0: Install mcporter**
-- Automatically installs `mcporter` globally via npm
-- MCP server manager for configuration management
 
 **Step 1: Configure MCP Server**
 - Set up `mcp-server-tron` with your credentials
@@ -90,10 +88,11 @@ The interactive installer will guide you through:
 
 ### What Gets Installed
 
-- ✅ **mcporter** - MCP server manager (global npm package)
 - ✅ **MCP server configuration** - `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Installed to your chosen location
 - ✅ **Available skills**: sunswap, x402_tron_payment, x402_tron_payment_demo
+
+**Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 
 ## 🔐 Security
 
