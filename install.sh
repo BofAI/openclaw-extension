@@ -527,13 +527,21 @@ EOF
                  
                  if [ "$cred_choice" = "1" ]; then
                      # Store in config file
-                     ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (0x...). Required for signing transactions."
+                     ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
                      ask_input "Enter LOG_LEVEL" BNB_LOG_LEVEL 0 "Log level: DEBUG, INFO, WARN, ERROR (default: INFO)"
 
                      echo -e "${MUTED}Saving configuration...${NC}"
 
-                     BNB_KEY_VAL="\"$BNB_KEY\""
-                     if [ -z "$BNB_KEY" ]; then BNB_KEY_VAL="null"; fi
+                     # Ensure private key has 0x prefix
+                     if [ -n "$BNB_KEY" ]; then
+                         if [[ ! "$BNB_KEY" =~ ^0x ]]; then
+                             BNB_KEY="0x${BNB_KEY}"
+                             echo -e "${INFO}Added 0x prefix to private key${NC}"
+                         fi
+                         BNB_KEY_VAL="\"$BNB_KEY\""
+                     else
+                         BNB_KEY_VAL="null"
+                     fi
 
                      BNB_LOG_LEVEL_VAL="\"${BNB_LOG_LEVEL:-INFO}\""
 
