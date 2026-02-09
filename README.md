@@ -49,22 +49,51 @@ OpenClaw Extension provides a CLI installer to set up your environment quickly.
 
 ### Quick Start
 
-Install from source:
-
-```bash
-./install.sh
-```
-
-Online install:
+**Install MCP Server and Infrastructure:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install.sh | bash
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/bankofai/openclaw-extension.git
+cd openclaw-extension
+./install.sh
 ```
 
 The interactive CLI will guide you through:
 1.  Selecting desired skills (`x402-tron-payment`, etc.).
 2.  Configuring the `mcp-server-tron`.
 3.  Securely setting up your credentials.
+
+**Install TRON Skills from GitHub:**
+
+After installing the MCP server, install additional TRON skills:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install-skills-from-github.sh | bash
+```
+
+Or from source:
+
+```bash
+cd openclaw-extension
+./install-skills-from-github.sh
+```
+
+This will:
+- ✅ Clone the [skills-tron](https://github.com/bankofai/skills-tron) repository
+- ✅ Auto-detect all available skills (SunSwap, x402 payment, etc.)
+- ✅ Interactive multi-select menu (Space to toggle, Enter to confirm)
+- ✅ Choose installation location (user/workspace/custom)
+- ✅ Install selected skills automatically
+
+**Available Skills:**
+- **sunswap** - SunSwap DEX trading skill for TRON token swaps
+- **x402_tron_payment** - Enables agent payments on TRON network
+- **x402_tron_payment_demo** - Demo of x402 payment protocol
 
 ## 🔐 Security
 
