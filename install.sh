@@ -2,40 +2,46 @@
 set -euo pipefail
 
 # OpenClaw Extension Installer (by BankofAI)
+# Installs MCP server and TRON skills from GitHub
 
 # --- Colors & Styling ---
 BOLD='\033[1m'
-ACCENT='\033[38;2;255;90;45m'      # Brand Orange
-ACCENT_DIM='\033[38;2;209;74;34m'  # Darker Orange
-INFO='\033[38;2;0;145;255m'        # Balanced Blue (Works on both light/dark)
-SUCCESS='\033[38;2;0;200;83m'      # Balanced Green
-WARN='\033[38;2;255;171;0m'        # Balanced Amber
-ERROR='\033[38;2;211;47;47m'       # Balanced Red
-MUTED='\033[38;2;128;128;128m'     # Medium Gray
-NC='\033[0m' # No Color
+ACCENT='\033[38;2;255;90;45m'
+ACCENT_DIM='\033[38;2;209;74;34m'
+INFO='\033[38;2;0;145;255m'
+SUCCESS='\033[38;2;0;200;83m'
+WARN='\033[38;2;255;171;0m'
+ERROR='\033[38;2;211;47;47m'
+MUTED='\033[38;2;128;128;128m'
+NC='\033[0m'
 
 # --- Configuration ---
-# Ensure we have a TTY for user interaction, even if piped
 if [ -t 0 ]; then
     exec 3<&0
 elif [ -e /dev/tty ]; then
     exec 3</dev/tty
 else
-    # Fallback to stdin if no TTY, though interaction may fail
     exec 3<&0
 fi
 
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
+OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
+OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
+GITHUB_REPO="https://github.com/bankofai/skills-tron.git"
 TMPFILES=()
+TEMP_DIR=""
+INSTALLED_SKILLS=()
 
-# --- Cleanup Trap ---
+# --- Cleanup ---
 cleanup() {
     local f
     for f in "${TMPFILES[@]:-}"; do
         rm -f "$f" 2>/dev/null || true
     done
-    # Restore cursor
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
     tput cnorm 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -80,6 +86,10 @@ check_env() {
         echo -e "${ERROR}Error: 'npx' is not found.${NC}"
         exit 1
     fi
+    if ! command -v git &> /dev/null; then
+        echo -e "${ERROR}Error: git is not installed.${NC}"
+        exit 1
+    fi
 
     # Detect Python interpreter
     if command -v python3 &> /dev/null; then
@@ -92,14 +102,13 @@ check_env() {
     fi
 }
 
-# --- JSON Helper (Generic) ---
-# Usage: write_server_config "server_name" "json_payload_string" "config_file"
+# --- JSON Helper ---
 write_server_config() {
     local server="$1"
     local json_payload="$2"
     local config_file="$3"
 
-    local py_scrip
+    local py_script
     py_script=$(mktempfile)
 
     local payload_file
@@ -137,23 +146,21 @@ if 'mcpServers' not in data:
 if server_name not in data['mcpServers']:
     data['mcpServers'][server_name] = {}
 
-# Deep merge logic for 'env' to avoid overwriting existing keys if not specified
+# Deep merge logic for 'env'
 if 'env' in payload:
     if 'env' not in data['mcpServers'][server_name]:
         data['mcpServers'][server_name]['env'] = {}
 
     for k, v in payload['env'].items():
         if v is None or v == "":
-             # Remove key if it exists
              if k in data['mcpServers'][server_name]['env']:
                  del data['mcpServers'][server_name]['env'][k]
         else:
              data['mcpServers'][server_name]['env'][k] = v
 
-    # Remove 'env' from payload so we don't overwrite the dict we just updated
     del payload['env']
 
-# Update other top-level keys (command, args, etc.)
+# Update other top-level keys
 for k, v in payload.items():
     data['mcpServers'][server_name][k] = v
 
@@ -174,7 +181,6 @@ ask_input() {
         echo -e "${MUTED}  $description${NC}"
     fi
 
-    # Prompt text styling updated
     echo -ne "${INFO}?${NC} $prompt ${MUTED}(optional)${NC}: "
 
     if [[ "$is_secret" == "1" ]]; then
@@ -186,7 +192,7 @@ ask_input() {
     printf -v "$var_name" '%s' "$input_val"
 }
 
-# --- Multiselect Function (Fixed Logic) ---
+# --- Multiselect Function ---
 multiselect() {
     local prompt="$1"
     local result_var="$2"
@@ -196,17 +202,21 @@ multiselect() {
     local current=0
     local i
 
-    # Initialize selection
-    for ((i=0; i<${#options[@]}; i++)); do selected[i]=true; done # Default all to true
+    # Initialize selection - all selected by default
+    for ((i=0; i<${#options[@]}; i++)); do
+        selected[i]=true
+    done
 
     # Prepare screen area
     echo -e "${INFO}?${NC} ${BOLD}$prompt${NC} ${MUTED}(Space:toggle, Enter:confirm)${NC}"
-    for ((i=0; i<${#options[@]}; i++)); do echo ""; done
+    for ((i=0; i<${#options[@]}; i++)); do
+        echo ""
+    done
 
     tput civis # Hide cursor
 
     while true; do
-        # Move cursor up to start of lis
+        # Move cursor up to start of list
         tput cuu ${#options[@]}
 
         for ((i=0; i<${#options[@]}; i++)); do
@@ -234,31 +244,35 @@ multiselect() {
             echo -e "${pointer}${checkbox} ${color}${options[i]}${NC}"
         done
 
-        # Read Input (with IFS cleared to capture space correctly)
+        # Read Input
         local key=""
         IFS= read -rsn1 key <&3
 
         case "$key" in
-            "") # Enter key (empty string)
+            "")
                 break
                 ;;
-            " ") # Space key
+            " ")
                 if [ "${selected[$current]}" = true ]; then
                     selected[$current]=false
                 else
                     selected[$current]=true
                 fi
                 ;;
-            $'\x1b') # Escape sequence
+            $'\x1b')
                 read -rsn2 -t 0.1 key <&3
                 case "$key" in
-                    "[A") # Up Arrow
+                    "[A")
                         ((current--)) || true
-                        if [ $current -lt 0 ]; then current=$((${#options[@]} - 1)); fi
+                        if [ $current -lt 0 ]; then
+                            current=$((${#options[@]} - 1))
+                        fi
                         ;;
-                    "[B") # Down Arrow
+                    "[B")
                         ((current++)) || true
-                        if [ $current -ge ${#options[@]} ]; then current=0; fi
+                        if [ $current -ge ${#options[@]} ]; then
+                            current=0
+                        fi
                         ;;
                 esac
                 ;;
@@ -270,9 +284,102 @@ multiselect() {
     # Return results
     local indices=()
     for ((i=0; i<${#options[@]}; i++)); do
-        if [ "${selected[i]}" = true ]; then indices+=("$i"); fi
+        if [ "${selected[i]}" = true ]; then
+            indices+=("$i")
+        fi
     done
     eval $result_var="(${indices[@]})"
+}
+
+# --- Skills Installation Functions ---
+
+clone_skills_repo() {
+    echo -e "${INFO}Cloning skills-tron repository...${NC}"
+    TEMP_DIR=$(mktemp -d)
+    
+    if ! git clone --depth 1 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
+        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
+        return 1
+    fi
+    
+    echo -e "${SUCCESS}✓ Repository cloned${NC}"
+    echo ""
+    return 0
+}
+
+select_install_target() {
+    echo -e "${BOLD}Select skills installation location:${NC}"
+    echo -e "  ${INFO}1)${NC} User-level (${INFO}~/.openclaw/skills/${NC}) ${SUCCESS}[Recommended]${NC}"
+    echo -e "     ${MUTED}Available to all OpenClaw workspaces${NC}"
+    echo -e "  ${INFO}2)${NC} Workspace-level (${INFO}.openclaw/skills/${NC})"
+    echo -e "     ${MUTED}Only available in current workspace${NC}"
+    echo -e "  ${INFO}3)${NC} Custom path"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
+    
+    read -r choice <&3
+    choice=${choice:-1}
+    
+    case $choice in
+        1)
+            TARGET_DIR="$OPENCLAW_USER_SKILLS"
+            ;;
+        2)
+            TARGET_DIR="$OPENCLAW_WORKSPACE_SKILLS"
+            ;;
+        3)
+            echo -ne "${INFO}?${NC} Enter custom path: "
+            read -r TARGET_DIR <&3
+            TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
+            ;;
+        *)
+            echo -e "${WARN}Invalid choice, using default${NC}"
+            TARGET_DIR="$OPENCLAW_USER_SKILLS"
+            ;;
+    esac
+    
+    echo -e "${MUTED}→ Installing to: ${INFO}$TARGET_DIR${NC}"
+    echo ""
+}
+
+copy_skill() {
+    local skill_id="$1"
+    local target_dir="$2"
+    
+    echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
+    
+    if [ ! -d "$TEMP_DIR/$skill_id" ]; then
+        echo -e "${ERROR}✗ Skill $skill_id not found in repository${NC}"
+        return 1
+    fi
+    
+    if [ ! -f "$TEMP_DIR/$skill_id/SKILL.md" ]; then
+        echo -e "${ERROR}✗ $skill_id/SKILL.md not found${NC}"
+        return 1
+    fi
+    
+    if [ -d "$target_dir/$skill_id" ]; then
+        echo -e "${WARN}⚠ $skill_id already exists${NC}"
+        echo -ne "${INFO}?${NC} Overwrite? ${MUTED}(y/N)${NC}: "
+        read -r confirm <&3
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            echo -e "${MUTED}  Skipped $skill_id${NC}"
+            return 0
+        fi
+        rm -rf "$target_dir/$skill_id"
+    fi
+    
+    mkdir -p "$target_dir"
+    cp -r "$TEMP_DIR/$skill_id" "$target_dir/"
+    
+    if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
+        echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
+        INSTALLED_SKILLS+=("$skill_id")
+        return 0
+    else
+        echo -e "${ERROR}✗ Installation failed${NC}"
+        return 1
+    fi
 }
 
 # --- Main Logic ---
@@ -287,35 +394,31 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-# --- Step 1: Skills (Multiselect) ---
+# --- Step 0: Install mcporter ---
 
-# Define Skill Options
-SKILL_OPTIONS=("mcporter - MCP server manager and configuration tool" "x402-tron-payment - Enables agent payments on TRON network (x402 protocol)" "x402-tron-payment-demo - Demo of x402 payment protocol by fetching a protected image.")
-SKILL_IDS=("mcporter" "x402-tron-payment" "x402-tron-payment-demo")
+echo -e "${BOLD}Step 0: Installing mcporter (MCP Manager)${NC}"
+echo ""
+echo -e "${INFO}Installing mcporter globally...${NC}"
 
-if [ ${#SKILL_OPTIONS[@]} -gt 0 ]; then
-    echo ""
-    SELECTED_SKILL_INDICES=()
-    multiselect "Select Skills/Tools to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
-
-    if [ ${#SELECTED_SKILL_INDICES[@]} -gt 0 ]; then
-        for idx in "${SELECTED_SKILL_INDICES[@]}"; do
-            SKILL_ID="${SKILL_IDS[$idx]}"
-            echo -e "${INFO}Installing: $SKILL_ID...${NC}"
-            npx clawhub install --force "$SKILL_ID"
-        done
-    else
-        echo -e "${MUTED}No skills selected.${NC}"
-    fi
+if npm list -g mcporter &> /dev/null; then
+    echo -e "${SUCCESS}✓ mcporter is already installed${NC}"
 else
-    echo ""
-    echo -e "${BOLD}Install Skills:${NC}"
-    echo -e "${MUTED}(No additional skills currently available)${NC}"
+    if npm install -g mcporter; then
+        echo -e "${SUCCESS}✓ mcporter installed successfully${NC}"
+    else
+        echo -e "${ERROR}✗ Failed to install mcporter${NC}"
+        echo -e "${WARN}You may need to run with sudo or fix npm permissions${NC}"
+        exit 1
+    fi
 fi
 
-# --- Step 2: Server Selection (Multiselect) ---
+echo ""
 
-# Define Server Options and mapping
+# --- Step 1: MCP Server Configuration ---
+
+echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
+echo ""
+
 SERVER_OPTIONS=("mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)")
 SERVER_IDS=("mcp-server-tron")
 
@@ -323,43 +426,52 @@ SELECTED_INDICES=()
 multiselect "Select MCP Servers to install:" SELECTED_INDICES "${SERVER_OPTIONS[@]}"
 
 if [ ${#SELECTED_INDICES[@]} -eq 0 ]; then
-    echo -e "${WARN}No servers selected. Exiting.${NC}"
-    exit 0
-fi
+    echo -e "${WARN}No MCP servers selected.${NC}"
+    SKIP_MCP=true
+else
+    SKIP_MCP=false
+    
+    for idx in "${SELECTED_INDICES[@]}"; do
+        SERVER_ID="${SERVER_IDS[$idx]}"
 
-# --- Step 3: Configuration ---
+        echo ""
+        echo -e "${BOLD}Configuring $SERVER_ID...${NC}"
 
-for idx in "${SELECTED_INDICES[@]}"; do
-    SERVER_ID="${SERVER_IDS[$idx]}"
+        case "$SERVER_ID" in
+            "mcp-server-tron")
+                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
+                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
+                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
+                 echo ""
+                 
+                 # Ask for credential storage method
+                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
+                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
+                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
+                 echo -e "  ${INFO}2)${NC} Use environment variables"
+                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
+                 echo ""
+                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
+                 
+                 read -r cred_choice <&3
+                 cred_choice=${cred_choice:-2}
+                 
+                 echo ""
+                 
+                 if [ "$cred_choice" = "1" ]; then
+                     # Store in config file
+                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 0 "Your TRON wallet private key. Required for signing transactions."
+                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 0 "Your TronGrid API Key. Required for reliable network access."
 
-    echo ""
-    echo -e "${BOLD}Configuring $SERVER_ID...${NC}"
+                     echo -e "${MUTED}Saving configuration...${NC}"
 
-    case "$SERVER_ID" in
-        "mcp-server-tron")
-             echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-             echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-             echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
-             echo ""
+                     TRON_KEY_VAL="\"$TRON_KEY\""
+                     if [ -z "$TRON_KEY" ]; then TRON_KEY_VAL="null"; fi
 
-             ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 0 "Your TRON wallet private key. Required for signing transactions."
-             ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 0 "Your TronGrid API Key. Required for reliable network access."
+                     TRON_API_KEY_VAL="\"$TRON_API_KEY\""
+                     if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
 
-             echo -e "${MUTED}Saving configuration...${NC}"
-
-             # Construct JSON payload for this server
-             # Env vars + Command + Args
-
-             # We construct env part manually for simplicity in bash, treating empty values as nulls
-             # Python helper handles None/null by removing the key
-
-             TRON_KEY_VAL="\"$TRON_KEY\""
-             if [ -z "$TRON_KEY" ]; then TRON_KEY_VAL="null"; fi
-
-             TRON_API_KEY_VAL="\"$TRON_API_KEY\""
-             if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
-
-             JSON_PAYLOAD=$(cat <<EOF
+                     JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"],
@@ -370,17 +482,143 @@ for idx in "${SELECTED_INDICES[@]}"; do
 }
 EOF
 )
-             write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
-             ;;
-    esac
+                 else
+                     # Use environment variables
+                     echo -e "${INFO}Using environment variables for credentials.${NC}"
+                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
+                     echo ""
+                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
+                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
+                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
+                     echo ""
+                     
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bankofai/mcp-server-tron"]
+}
+EOF
+)
+                 fi
+                 
+                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 ;;
+        esac
 
-    echo -e "${SUCCESS}✓ Configuration saved for $SERVER_ID.${NC}"
-done
+        echo -e "${SUCCESS}✓ Configuration saved for $SERVER_ID.${NC}"
+    done
+fi
+
+# --- Step 2: Skills Installation from GitHub ---
+
+echo ""
+echo -e "${BOLD}Step 2: Skills Installation from GitHub${NC}"
+echo ""
+
+if ! clone_skills_repo; then
+    echo -e "${WARN}Skipping skills installation due to clone failure.${NC}"
+else
+    # Discover available skills
+    SKILL_OPTIONS=()
+    SKILL_IDS=()
+
+    for dir in "$TEMP_DIR"/*; do
+        if [ -d "$dir" ] && [ -f "$dir/SKILL.md" ]; then
+            skill_name=$(basename "$dir")
+            
+            # Skip installer directory
+            if [ "$skill_name" = "installer" ]; then
+                continue
+            fi
+            
+            # Read description
+            description=$(head -n 1 "$dir/SKILL.md" | sed 's/^#* *//' | sed 's/^---$//')
+            
+            if [ -z "$description" ] || [ "$description" = "---" ]; then
+                description=$(grep "^description:" "$dir/SKILL.md" 2>/dev/null | head -n 1 | sed 's/^description: *//' || echo "")
+            fi
+            
+            if [ -z "$description" ]; then
+                description="TRON skill"
+            fi
+            
+            SKILL_IDS+=("$skill_name")
+            SKILL_OPTIONS+=("$skill_name - $description")
+        fi
+    done
+
+    if [ ${#SKILL_OPTIONS[@]} -eq 0 ]; then
+        echo -e "${WARN}No skills found in repository.${NC}"
+    else
+        SELECTED_SKILL_INDICES=()
+        multiselect "Select skills to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
+
+        if [ ${#SELECTED_SKILL_INDICES[@]} -eq 0 ]; then
+            echo -e "${MUTED}No skills selected.${NC}"
+        else
+            echo ""
+            select_install_target
+            
+            echo -e "${BOLD}Installing skills...${NC}"
+            echo ""
+
+            for idx in "${SELECTED_SKILL_INDICES[@]}"; do
+                skill_id="${SKILL_IDS[$idx]}"
+                copy_skill "$skill_id" "$TARGET_DIR"
+            done
+        fi
+    fi
+fi
 
 # --- Final Summary ---
 echo ""
-echo -e "${ACCENT}${BOLD}Installation Complete!${NC}"
-echo -e "${SUCCESS}✓${NC} Configuration file: ${INFO}$MCP_CONFIG_FILE${NC}"
-echo -e "${WARN}→${NC} Please secure your config file:"
-echo -e "   ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"
+echo -e "${ACCENT}${BOLD}═══════════════════════════════════════${NC}"
+echo -e "${ACCENT}${BOLD}  Installation Complete!${NC}"
+echo -e "${ACCENT}${BOLD}═══════════════════════════════════════${NC}"
+echo ""
+
+if [ "$SKIP_MCP" = false ]; then
+    echo -e "${SUCCESS}✓${NC} ${BOLD}mcporter installed${NC}"
+    echo -e "${SUCCESS}✓${NC} ${BOLD}MCP Server configured${NC}"
+    echo -e "  ${INFO}Config file: ${BOLD}$MCP_CONFIG_FILE${NC}"
+    echo -e "  ${WARN}→ Secure your config: ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"
+    echo ""
+fi
+
+if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
+    echo -e "${SUCCESS}✓${NC} ${BOLD}Installed skills:${NC}"
+    for skill in "${INSTALLED_SKILLS[@]}"; do
+        echo -e "  ${SUCCESS}•${NC} ${INFO}$skill${NC}"
+    done
+    echo -e "  ${INFO}Location: ${BOLD}$TARGET_DIR${NC}"
+    echo ""
+fi
+
+if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
+    echo -e "${BOLD}Next steps:${NC}"
+    echo ""
+    echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw${NC} to load new skills"
+    echo -e "     ${MUTED}• Close OpenClaw completely${NC}"
+    echo -e "     ${MUTED}• Reopen OpenClaw${NC}"
+    echo ""
+    echo -e "  ${INFO}2.${NC} ${BOLD}Test the skills:${NC}"
+    
+    for skill in "${INSTALLED_SKILLS[@]}"; do
+        case "$skill" in
+            "sunswap")
+                echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
+                ;;
+            "x402_tron_payment")
+                echo -e "     ${MUTED}\"Read the x402_tron_payment skill and explain how it works\"${NC}"
+                ;;
+            "x402_tron_payment_demo")
+                echo -e "     ${MUTED}\"Read the x402_tron_payment_demo skill and run the demo\"${NC}"
+                ;;
+        esac
+    done
+    echo ""
+fi
+
+echo -e "${MUTED}Repository: https://github.com/bankofai/openclaw-extension${NC}"
+echo -e "${MUTED}Skills: https://github.com/bankofai/skills-tron${NC}"
 echo ""
