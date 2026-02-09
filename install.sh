@@ -407,29 +407,7 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-# Define Skill Options
-SKILL_OPTIONS=("mcporter - MCP server manager and configuration tool")
-SKILL_IDS=("mcporter")
-
-if [ ${#SKILL_OPTIONS[@]} -gt 0 ]; then
-    echo ""
-    SELECTED_SKILL_INDICES=()
-    multiselect "Select Skills/Tools to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
-
-    if [ ${#SELECTED_SKILL_INDICES[@]} -gt 0 ]; then
-        for idx in "${SELECTED_SKILL_INDICES[@]}"; do
-            SKILL_ID="${SKILL_IDS[$idx]}"
-            echo -e "${INFO}Installing: $SKILL_ID...${NC}"
-            npx clawhub install --force "$SKILL_ID"
-        done
-    else
-        echo -e "${MUTED}No skills selected.${NC}"
-    fi
-else
-    echo ""
-    echo -e "${BOLD}Install Skills:${NC}"
-    echo -e "${MUTED}(No additional skills currently available)${NC}"
-fi
+npx clawhub install --force mcporter
 
 # --- Step 1: MCP Server Configuration ---
 
