@@ -34,6 +34,8 @@ The installer automatically fetches skills from the [skills-tron](https://github
 
 3.  **x402_tron_payment_demo** - Demo of x402 payment protocol
 
+OpenClaw Extension provides a CLI installer to set up your environment quickly.
+
 ## 🛠 Installation
 
 ### Prerequisites
@@ -60,31 +62,6 @@ git clone https://github.com/bankofai/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
 ```
-
-### Installation Steps
-
-The interactive installer will guide you through:
-
-**Step 1: Configure MCP Server**
-- Set up `mcp-server-tron` with your credentials
-- **Choose credential storage method:**
-  - **Option 1**: Save in config file (`~/.mcporter/mcporter.json`)
-    - Convenient but less secure (plaintext storage)
-  - **Option 2**: Use environment variables (Recommended)
-    - More secure, keys read from shell environment
-    - Add to `~/.zshrc` or `~/.bashrc`:
-      ```bash
-      export TRON_PRIVATE_KEY="your_private_key_here"
-      export TRONGRID_API_KEY="your_api_key_here"
-      ```
-
-**Step 2: Install Skills from GitHub**
-- Automatically clones [skills-tron](https://github.com/bankofai/skills-tron) repository
-- Interactive multi-select menu (Space to toggle, Enter to confirm)
-- Choose installation location:
-  - User-level: `~/.openclaw/skills/` (available to all workspaces)
-  - Workspace-level: `.openclaw/skills/` (current workspace only)
-  - Custom path
 
 ### What Gets Installed
 
