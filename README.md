@@ -12,66 +12,93 @@ To build the "Central Bank" for the agent economy, ensuring every AI agent can:
 
 ## 📦 Core Components
 
-This extension distributes the OpenClaw suite of tools tailored for TRON:
+This extension provides tools for TRON blockchain interaction:
 
-### Infrastructure (Prerequisites)
-These foundational tools are installed to manage the agent ecosystem:
+### MCP Server
 
-1.  **clawhub**: The **Skill Directory for OpenClaw**.
-    - A registry where agents can discover new capabilities and tools.
-    - Allows developers to publish and share agent skills.
+**mcp-server-tron**: A Model Context Protocol (MCP) server that gives AI agents direct access to the TRON blockchain.
+- **Capabilities**: Balance checks, transfers, smart contract interactions, resource estimation, token swaps
 
-2.  **mcporter**: The **MCP Manager**.
-    - Simplifies the configuration and management of multiple MCP servers.
-    - Handles environment variables and secure configuration injection.
+### Skills from GitHub
 
-### Agent Capabilities
+The installer automatically fetches skills from the [skills-tron](https://github.com/bankofai/skills-tron) repository:
 
-1.  **x402-tron-payment (Payment Protocol)**
-    This implements the **x402** protocol standard for the TRON Virtual Machine (TVM).
-    - Enables "Pay-per-Request" models for agent APIs.
-    - Allows agents to generate payment demands (invoices) and verify on-chain settlement before performing tasks.
-    - **Benefit**: Turns any agent endpoint into a monetizable asset.
+1.  **sunswap** - SunSwap DEX trading skill for TRON token swaps
+    - Multi-version pool routing (V1/V2/V3/PSM)
+    - Price quotes with slippage protection
+    - Token approval management
 
-2.  **mcp-server-tron**
-    A Model Context Protocol (MCP) server that gives LLMs direct access to the TRON blockchain.
-    - **Capabilities**: Balance checks, transfers, smart contract interactions, resource estimation.
+2.  **x402_tron_payment** - Enables agent payments on TRON network (x402 protocol)
+    - Pay-per-request models for agent APIs
+    - Payment verification before task execution
 
-## 🛠 Installation
+3.  **x402_tron_payment_demo** - Demo of x402 payment protocol
 
 OpenClaw Extension provides a CLI installer to set up your environment quickly.
 
+## 🛠 Installation
+
 ### Prerequisites
-- **OpenClaw** (Your personal, open-source AI assistant)
+- **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
+- **Git** (for cloning skills repository)
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
+
+**Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
 ### Quick Start
 
-Install from source:
-
-```bash
-./install.sh
-```
-
-Online install:
+**One-command installation:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-The interactive CLI will guide you through:
-1.  Selecting desired skills (`x402-tron-payment`, etc.).
-2.  Configuring the `mcp-server-tron`.
-3.  Securely setting up your credentials.
+Or from source:
+
+```bash
+git clone https://github.com/bankofai/openclaw-extension.git
+cd openclaw-extension
+./install.sh
+```
+
+### What Gets Installed
+
+- ✅ **MCP server configuration** - `~/.mcporter/mcporter.json`
+- ✅ **Skills** - Installed to your chosen location
+- ✅ **Available skills**: sunswap, x402_tron_payment, x402_tron_payment_demo
+
+**Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 
 ## 🔐 Security
 
-The tools require access to TRON private keys to sign transactions on behalf of the agent.
-- Keys are stored locally in `$HOME/.mcporter/mcporter.json`.
-- **Warning**: Ensure this file is secured (`chmod 600`) and never shared or committed to version control.
-- We recommend using specific agent wallets with limited funds rather than your main personal wallet.
+### Credential Storage Options
+
+The installer offers two methods for storing TRON credentials:
+
+**Option 1: Config File Storage**
+- Keys stored in `~/.mcporter/mcporter.json`
+- Convenient but less secure (plaintext)
+- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
+- Never share or commit this file to version control
+
+**Option 2: Environment Variables (Recommended)**
+- Keys read from shell environment
+- More secure, not stored in config files
+- Add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.):
+  ```bash
+  export TRON_PRIVATE_KEY="your_private_key_here"
+  export TRONGRID_API_KEY="your_api_key_here"
+  ```
+- Restart your shell or run `source ~/.zshrc` after adding
+
+### Best Practices
+
+- Use dedicated agent wallets with limited funds
+- Never use your main personal wallet
+- Test on Nile testnet before using mainnet
+- Do not allow AI agents to scan files containing private keys
 
 ## Use at your own risk
 
