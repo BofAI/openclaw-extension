@@ -28,7 +28,7 @@ MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
-GITHUB_REPO="https://github.com/bankofai/skills-tron.git"
+GITHUB_REPO="https://github.com/bankofai/skills.git"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -307,7 +307,7 @@ multiselect() {
 # --- Skills Installation Functions ---
 
 clone_skills_repo() {
-    echo -e "${INFO}Cloning skills-tron repository...${NC}"
+    echo -e "${INFO}Cloning skills repository...${NC}"
     TEMP_DIR=$(mktemp -d)
     
     if ! git clone --depth 1 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
@@ -355,10 +355,10 @@ select_install_target() {
     echo ""
 }
 
-configure_tron8004_key() {
+configure_erc8004_key() {
     echo ""
-    echo -e "${BOLD}TRC-8004 Private Key Configuration${NC}"
-    echo -e "${MUTED}TRC-8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
+    echo -e "${BOLD}ERC-8004 Private Key Configuration${NC}"
+    echo -e "${MUTED}ERC-8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
     echo ""
     
     # Check if key already exists
@@ -492,9 +492,9 @@ copy_skill() {
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
     fi
     
-    # Special handling for tron-8004: configure private key
-    if [ "$skill_id" = "tron-8004" ]; then
-        configure_tron8004_key
+    # Special handling for erc-8004: configure private key
+    if [ "$skill_id" = "erc-8004" ]; then
+        configure_erc8004_key
     fi
     
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
@@ -793,8 +793,8 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
                 ;;
-            "tron-8004")
-                echo -e "     ${MUTED}\"Read the tron-8004 skill and register my AI agent on TRON\"${NC}"
+            "erc-8004")
+                echo -e "     ${MUTED}\"Read the erc-8004 skill and register my AI agent on TRON\"${NC}"
                 ;;
             "x402_tron_payment")
                 echo -e "     ${MUTED}\"Read the x402_tron_payment skill and explain how it works\"${NC}"
@@ -808,5 +808,5 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
 fi
 
 echo -e "${MUTED}Repository: https://github.com/bankofai/openclaw-extension${NC}"
-echo -e "${MUTED}Skills: https://github.com/bankofai/skills-tron${NC}"
+echo -e "${MUTED}Skills: https://github.com/bankofai/skills${NC}"
 echo ""
