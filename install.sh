@@ -414,8 +414,14 @@ npx clawhub install --force mcporter
 echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
 echo ""
 
-SERVER_OPTIONS=("mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)")
-SERVER_IDS=("mcp-server-tron")
+SERVER_OPTIONS=(
+    "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
+    "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
+)
+SERVER_IDS=(
+    "mcp-server-tron"
+    "bnbchain-mcp"
+)
 
 SELECTED_INDICES=()
 multiselect "Select MCP Servers to install:" SELECTED_INDICES "${SERVER_OPTIONS[@]}"
@@ -491,6 +497,79 @@ EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"]
+}
+EOF
+)
+                 fi
+                 
+                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 ;;
+            
+            "bnbchain-mcp")
+                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
+                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
+                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
+                 echo ""
+                 
+                 # Ask for credential storage method
+                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
+                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
+                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
+                 echo -e "  ${INFO}2)${NC} Use environment variables"
+                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
+                 echo ""
+                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
+                 
+                 read -r cred_choice <&3
+                 cred_choice=${cred_choice:-2}
+                 
+                 echo ""
+                 
+                 if [ "$cred_choice" = "1" ]; then
+                     # Store in config file
+                     ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
+                     ask_input "Enter LOG_LEVEL" BNB_LOG_LEVEL 0 "Log level: DEBUG, INFO, WARN, ERROR (default: INFO)"
+
+                     echo -e "${MUTED}Saving configuration...${NC}"
+
+                     # Ensure private key has 0x prefix
+                     if [ -n "$BNB_KEY" ]; then
+                         if [[ ! "$BNB_KEY" =~ ^0x ]]; then
+                             BNB_KEY="0x${BNB_KEY}"
+                             echo -e "${INFO}Added 0x prefix to private key${NC}"
+                         fi
+                         BNB_KEY_VAL="\"$BNB_KEY\""
+                     else
+                         BNB_KEY_VAL="null"
+                     fi
+
+                     BNB_LOG_LEVEL_VAL="\"${BNB_LOG_LEVEL:-INFO}\""
+
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bnb-chain/mcp@latest"],
+  "env": {
+    "PRIVATE_KEY": $BNB_KEY_VAL,
+    "LOG_LEVEL": $BNB_LOG_LEVEL_VAL
+  }
+}
+EOF
+)
+                 else
+                     # Use environment variables
+                     echo -e "${INFO}Using environment variables for credentials.${NC}"
+                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
+                     echo ""
+                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
+                     echo -e "${MUTED}export PRIVATE_KEY=\"0x_your_private_key_here\"${NC}"
+                     echo -e "${MUTED}export LOG_LEVEL=\"INFO\"${NC}"
+                     echo ""
+                     
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bnb-chain/mcp@latest"]
 }
 EOF
 )
