@@ -355,6 +355,107 @@ select_install_target() {
     echo ""
 }
 
+configure_tron8004_key() {
+    echo ""
+    echo -e "${BOLD}TRC-8004 Private Key Configuration${NC}"
+    echo -e "${MUTED}TRC-8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
+    echo ""
+    
+    # Check if key already exists
+    local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
+    local has_env_key=false
+    
+    if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
+        has_env_key=true
+    fi
+    
+    if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
+        echo -e "${SUCCESS}✓ Private key already configured${NC}"
+        if [ -f "$key_file" ]; then
+            echo -e "${MUTED}  Found at: $key_file${NC}"
+        fi
+        if [ "$has_env_key" = true ]; then
+            echo -e "${MUTED}  Found in environment variable${NC}"
+        fi
+        echo ""
+        echo -ne "${INFO}?${NC} Reconfigure private key? ${MUTED}(y/N)${NC}: "
+        read -r reconfig <&3
+        if [[ ! "$reconfig" =~ ^[Yy]$ ]]; then
+            return 0
+        fi
+        echo ""
+    fi
+    
+    echo -e "${BOLD}How would you like to configure your private key?${NC}"
+    echo -e "  ${INFO}1)${NC} Save to file (${INFO}~/.clawdbot/wallets/.deployer_pk${NC}) ${SUCCESS}[Recommended]${NC}"
+    echo -e "     ${MUTED}Persistent, shared with ERC-8004${NC}"
+    echo -e "  ${INFO}2)${NC} Set environment variable (${INFO}TRON_PRIVATE_KEY${NC})"
+    echo -e "     ${MUTED}You'll need to add to ~/.zshrc or ~/.bashrc manually${NC}"
+    echo -e "  ${INFO}3)${NC} Skip (configure later)"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
+    
+    read -r key_choice <&3
+    key_choice=${key_choice:-1}
+    
+    echo ""
+    
+    case $key_choice in
+        1)
+            echo -e "${WARN}⚠ Your private key will be saved in PLAINTEXT${NC}"
+            echo -e "${WARN}   File: $key_file${NC}"
+            echo ""
+            echo -ne "${INFO}?${NC} Enter your TRON private key ${MUTED}(64 hex characters)${NC}: "
+            read -rs private_key <&3
+            echo ""
+            
+            if [ -z "$private_key" ]; then
+                echo -e "${WARN}No private key entered, skipping configuration${NC}"
+                return 0
+            fi
+            
+            # Validate key format (basic check)
+            if [ ${#private_key} -ne 64 ]; then
+                echo -e "${WARN}⚠ Warning: Private key should be 64 characters${NC}"
+                echo -ne "${INFO}?${NC} Continue anyway? ${MUTED}(y/N)${NC}: "
+                read -r continue_anyway <&3
+                if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
+                    echo -e "${MUTED}Skipping private key configuration${NC}"
+                    return 0
+                fi
+            fi
+            
+            # Save to file
+            mkdir -p "$(dirname "$key_file")"
+            echo "$private_key" > "$key_file"
+            chmod 600 "$key_file"
+            
+            echo -e "${SUCCESS}✓ Private key saved to $key_file${NC}"
+            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
+            ;;
+            
+        2)
+            echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
+            echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
+            echo ""
+            echo -e "${MUTED}Then reload your shell: source ~/.zshrc${NC}"
+            ;;
+            
+        3)
+            echo -e "${MUTED}Skipping private key configuration${NC}"
+            echo -e "${INFO}Configure later with one of these methods:${NC}"
+            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk${NC}"
+            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
+            ;;
+            
+        *)
+            echo -e "${WARN}Invalid choice, skipping configuration${NC}"
+            ;;
+    esac
+    
+    echo ""
+}
+
 copy_skill() {
     local skill_id="$1"
     local target_dir="$2"
@@ -384,6 +485,17 @@ copy_skill() {
     
     mkdir -p "$target_dir"
     cp -r "$TEMP_DIR/$skill_id" "$target_dir/"
+    
+    # Install npm dependencies if package.json exists
+    if [ -f "$target_dir/$skill_id/package.json" ]; then
+        echo -e "${MUTED}  Installing npm dependencies...${NC}"
+        (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
+    fi
+    
+    # Special handling for tron-8004: configure private key
+    if [ "$skill_id" = "tron-8004" ]; then
+        configure_tron8004_key
+    fi
     
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
         echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
@@ -601,6 +713,9 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
         case "$skill" in
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
+                ;;
+            "tron-8004")
+                echo -e "     ${MUTED}\"Read the tron-8004 skill and register my AI agent on TRON\"${NC}"
                 ;;
             "x402_tron_payment")
                 echo -e "     ${MUTED}\"Read the x402_tron_payment skill and explain how it works\"${NC}"
