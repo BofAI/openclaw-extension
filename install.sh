@@ -573,8 +573,8 @@ else
                  
                  if [ "$cred_choice" = "1" ]; then
                      # Store in config file
-                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 0 "Your TRON wallet private key. Required for signing transactions."
-                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 0 "Your TronGrid API Key. Required for reliable network access."
+                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 1 "Your TRON wallet private key. Required for signing transactions."
+                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Your TronGrid API Key. Required for reliable network access."
 
                      echo -e "${MUTED}Saving configuration...${NC}"
 
@@ -782,9 +782,9 @@ fi
 if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo -e "${BOLD}Next steps:${NC}"
     echo ""
-    echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw${NC} to load new skills"
-    echo -e "     ${MUTED}• Close OpenClaw completely${NC}"
-    echo -e "     ${MUTED}• Reopen OpenClaw${NC}"
+    echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw or start a new session${NC} to load new skills"
+    echo -e "     ${MUTED}• Option A: Close OpenClaw completely and reopen${NC}"
+    echo -e "     ${MUTED}• Option B: Start a new chat session${NC}"
     echo ""
     echo -e "  ${INFO}2.${NC} ${BOLD}Test the skills:${NC}"
     

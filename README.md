@@ -21,7 +21,7 @@ This extension provides tools for TRON blockchain interaction:
 
 ### Skills from GitHub
 
-The installer automatically fetches skills from the [skills-tron](https://github.com/bankofai/skills-tron) repository:
+The installer automatically fetches skills from the [skills](https://github.com/bankofai/skills) repository:
 
 1.  **sunswap** - SunSwap DEX trading skill for TRON token swaps
     - Multi-version pool routing (V1/V2/V3/PSM)
