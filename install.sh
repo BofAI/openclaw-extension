@@ -355,10 +355,10 @@ select_install_target() {
     echo ""
 }
 
-configure_erc8004_key() {
+configure_8004_key() {
     echo ""
-    echo -e "${BOLD}ERC-8004 Private Key Configuration${NC}"
-    echo -e "${MUTED}ERC-8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
+    echo -e "${BOLD}8004 Private Key Configuration${NC}"
+    echo -e "${MUTED}8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
     echo ""
     
     # Check if key already exists
@@ -388,7 +388,7 @@ configure_erc8004_key() {
     
     echo -e "${BOLD}How would you like to configure your private key?${NC}"
     echo -e "  ${INFO}1)${NC} Save to file (${INFO}~/.clawdbot/wallets/.deployer_pk${NC}) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Persistent, shared with ERC-8004${NC}"
+    echo -e "     ${MUTED}Persistent, shared with 8004-skill${NC}"
     echo -e "  ${INFO}2)${NC} Set environment variable (${INFO}TRON_PRIVATE_KEY${NC})"
     echo -e "     ${MUTED}You'll need to add to ~/.zshrc or ~/.bashrc manually${NC}"
     echo -e "  ${INFO}3)${NC} Skip (configure later)"
@@ -492,9 +492,9 @@ copy_skill() {
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
     fi
     
-    # Special handling for erc-8004: configure private key
-    if [ "$skill_id" = "erc-8004" ]; then
-        configure_erc8004_key
+    # Special handling for 8004-skill: configure private key
+    if [ "$skill_id" = "8004-skill" ]; then
+        configure_8004_key
     fi
     
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
@@ -782,9 +782,7 @@ fi
 if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo -e "${BOLD}Next steps:${NC}"
     echo ""
-    echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw or start a new session${NC} to load new skills"
-    echo -e "     ${MUTED}• Option A: Close OpenClaw completely and reopen${NC}"
-    echo -e "     ${MUTED}• Option B: Start a new chat session${NC}"
+    echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw and start a new session${NC} to load new skills"
     echo ""
     echo -e "  ${INFO}2.${NC} ${BOLD}Test the skills:${NC}"
     
@@ -793,14 +791,14 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
                 ;;
-            "erc-8004")
-                echo -e "     ${MUTED}\"Read the erc-8004 skill and register my AI agent on TRON\"${NC}"
+            "8004-skill")
+                echo -e "     ${MUTED}\"Read the 8004-skill and register my AI agent on TRON\"${NC}"
                 ;;
-            "x402_tron_payment")
-                echo -e "     ${MUTED}\"Read the x402_tron_payment skill and explain how it works\"${NC}"
+            "x402-payment")
+                echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"
                 ;;
-            "x402_tron_payment_demo")
-                echo -e "     ${MUTED}\"Read the x402_tron_payment_demo skill and run the demo\"${NC}"
+            "x402-payment-demo")
+                echo -e "     ${MUTED}\"Read the x402-payment-demo skill and run the demo\"${NC}"
                 ;;
         esac
     done
