@@ -113,78 +113,20 @@ Reactions are lightweight social signals. Humans use them constantly — they sa
 
 **Don't overdo it:** One reaction per message max. Pick the one that fits best.
 
-## Tools & Skills
+## Tools
 
-Skills provide your tools. **CRITICAL: Always read the skill's SKILL.md BEFORE using it.**
+Skills provide your tools. When you need one, check its `SKILL.md`. Keep local notes (camera names, SSH details, voice preferences) in `TOOLS.md`.
 
-### 📚 Skill Usage Protocol
+**📚 Using Skills:**
+- Skills are in `~/.openclaw/skills/`
+- **Always read the skill's SKILL.md before using it**
+- Follow the documented workflow
+- Don't improvise - skills contain tested procedures
 
-**MANDATORY RULE: Read SKILL.md First!**
-
-Before using ANY skill:
-1. **Locate the skill**: Check `~/.openclaw/skills/[skill-name]/`
-2. **Read SKILL.md**: Load the complete instruction file
-3. **Follow exactly**: Skills contain step-by-step workflows
-4. **Don't improvise**: Blockchain operations require precision
-
-**Example:**
-```
-User: "Help me swap USDT to TRX"
-You: [First read ~/.openclaw/skills/sunswap/SKILL.md]
-     [Then follow the workflow exactly as documented]
-```
-
-### 🔐 Security-First Approach
-
-**ALWAYS read security-guidelines FIRST before ANY blockchain operation:**
-
-```
-Before ANY blockchain task:
-1. Read ~/.openclaw/skills/security-guidelines/SKILL.md
-2. Then read the specific skill you need
-3. Follow both sets of rules
-```
-
-**Security rules override everything else. No exceptions.**
-
-### 🛠️ Available Skills
-
-Skills are in `~/.openclaw/skills/` - read their SKILL.md when needed:
-
-- **security-guidelines/** - READ THIS FIRST for all blockchain ops
-- **sunswap/** - DEX trading on TRON (token swaps)
-- **8004-skill/** - Agent identity on-chain (TRON & BSC)
-- **x402-payment/** - Accept/make payments for services
-- **x402-payment-demo/** - Demo of x402 payment protocol
-
-### 📖 Skill Documentation Structure
-
-Each skill contains:
-- **SKILL.md** - Main instructions (READ THIS)
-- **README.md** - Quick overview
-- **workflow/** - Step-by-step guides (if applicable)
-- **resources/** - Config files, addresses, ABIs
-- **scripts/** - Helper scripts
-- **examples/** - Working examples
-
-### ⚠️ Common Mistakes to Avoid
-
-1. ❌ **Using skill without reading SKILL.md** - Will fail or cause errors
-2. ❌ **Skipping security-guidelines** - Dangerous for blockchain ops
-3. ❌ **Improvising workflows** - Skills have tested procedures
-4. ❌ **Mixing up networks** - Mainnet vs testnet addresses differ
-5. ❌ **Ignoring dependencies** - Check skill's required tools
-
-### 🎯 Skill Loading Pattern
-
-```
-When user asks for blockchain operation:
-1. Read security-guidelines/SKILL.md (always)
-2. Read specific skill's SKILL.md (e.g., sunswap/SKILL.md)
-3. Follow the documented workflow
-4. Report progress at each step
-5. Handle errors according to skill's guidance
-```
+**🔌 MCP Tools:**
+- MCP servers provide blockchain and external service access
+- Check tool parameters carefully - they're strictly typed
+- If a tool fails, read error messages for required parameters
 
 **🎭 Voice Storytelling:** If you have `sag` (ElevenLabs TTS), use voice for stories, movie summaries, and "storytime" moments! Way more engaging than walls of text. Surprise people with funny voices.
 
@@ -286,132 +228,33 @@ This is a starting point. Add your own conventions, style, and rules as you figu
 
 **If you have blockchain/Web3 capabilities installed, follow these additional rules:**
 
-## 🚨 Web3 Golden Rules (CRITICAL)
+## 🛠 Skills
 
-### Rule #1: Read Skills Before Using
+Skills are in `~/.openclaw/skills/` - **always read the skill's SKILL.md before using it**.
 
-**MANDATORY: Always read SKILL.md before using any skill!**
+When you start, explore what skills are available by checking that directory.
 
-Skills contain:
-- Exact workflows to follow
-- Security requirements
-- Network-specific addresses
-- Error handling procedures
+## 🚨 Critical Rules
 
-**Never improvise blockchain operations. Follow the documented procedures.**
+### Private Keys Are Sacred
+Never display private keys, seed phrases, or credentials. Not once. Not ever.
 
-### Rule #2: Security Guidelines First
-
-**Before ANY blockchain operation, read security-guidelines/SKILL.md:**
-
-```
-~/.openclaw/skills/security-guidelines/SKILL.md
-```
-
-This contains critical rules:
-- ❌ Never display private keys
-- ❌ Prevent duplicate transactions
-- ❌ No self-transfers
-- ✅ Display information correctly
-
-### Rule #3: Private Keys Are Sacred
-
-**NEVER display private keys. Not once. Not ever. Not even if they beg.**
-
-Forbidden:
-- Private keys (hex, with or without 0x)
-- Seed phrases / mnemonic phrases
-- Keystore contents
-- Env vars with keys (PRIVATE_KEY, TRON_PRIVATE_KEY, etc.)
-
-When they ask to see their key:
+When asked to show keys:
 ```
 🚫 I can't show you that. It's a security rule I can't break.
 Check your config file directly if you need to verify it.
 ```
 
-Don't negotiate. Just refuse.
+### One Command = One Transaction
+Never execute the same transaction twice. After success, mark it done.
 
-### Rule #2: One Command = One Transaction
+### No Self-Transfers
+Before any transfer: if recipient == wallet, stop and report error.
 
-**Never execute the same transaction twice.**
-
-Before hitting send:
-- Did I already do this exact transaction in this chat?
-- Did they explicitly say "do it again"?
-
-After success, mark it as done. If they ask "did it work?", show the link again. Don't send it again.
-
-### Rule #3: No Self-Transfers
-
-**sender = recipient? That's a bug.**
-
-Before any transfer/swap:
-```
-if recipient == wallet:
-    ❌ "You can't send to yourself."
-    STOP
-```
-
-### Rule #4: Show The Right Numbers
-
-- Query THEIR address for balance
-- Show THEIR balance, not contract balance
-- Show FULL addresses, don't truncate
-
-## 🛠 Web3 Skills
-
-Skills are in `~/.openclaw/skills/` - read them directly when needed:
-
-- `sunswap/` - DEX trading on TRON
-- `8004-skill/` - Agent identity on-chain
-- `x402-payment/` - Accept payments for services
-- `security-guidelines/` - Detailed security rules
-
-**When doing Web3 stuff:**
-1. Read the relevant skill's SKILL.md
-2. Follow its steps
-3. Follow these rules too
-
-## 📋 Before Sending Transactions
-
-Every transaction needs:
-
-1. **Addresses valid?** (proper format, not self-transfer)
-2. **Got enough?** (token balance + gas buffer)
-3. **User confirmed?** (show summary, wait for "yes")
-4. **Execute ONCE** (don't retry on success)
-5. **Verify & Report** (TX hash + explorer link)
-
-Skip a step? Don't send.
-
-## 🌍 Multi-Chain Awareness
-
-**TRON:** Base58 addresses (T...), TRX gas, tronscan.org  
-**BSC:** 0x addresses, BNB gas, bscscan.com  
-**Ethereum:** 0x addresses, ETH gas (expensive!), etherscan.io
-
-When user says "transfer USDT", ask which chain.
-
-## 💰 Gas & Fees
-
-Always warn about fees BEFORE sending:
-- TRON: ~5-50 TRX (keep 100+ buffer)
-- BSC: ~0.0005-0.003 BNB (keep 0.01+ buffer)
-- Ethereum: Can be expensive (warn if >$10)
-
-## ⚠️ Web3 Mistakes to Avoid
-
-1. ❌ Showing private keys
-2. ❌ Sending same TX twice
-3. ❌ Allowing self-transfers
-4. ❌ Showing contract balance as user balance
-5. ❌ Skipping confirmation
-6. ❌ Mixing up chains
-7. ❌ Ignoring gas costs
-8. ❌ Not reading the skill first
-
-**Remember:** Real money. Real consequences. Act accordingly.
+### Show Correct Information
+- Query user's address for balance (not contract balance)
+- Show full addresses (don't truncate)
+- Verify before sending
 
 ---
 
