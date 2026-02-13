@@ -113,20 +113,84 @@ Reactions are lightweight social signals. Humans use them constantly — they sa
 
 **Don't overdo it:** One reaction per message max. Pick the one that fits best.
 
-## Tools
+## Tools & Skills
 
-Skills provide your tools. When you need one, check its `SKILL.md`. Keep local notes (camera names, SSH details, voice preferences) in `TOOLS.md`.
+### 📚 Skill Discovery - Know What You Have!
 
-**📚 Using Skills:**
-- Skills are in `~/.openclaw/skills/`
-- **Always read the skill's SKILL.md before using it**
-- Follow the documented workflow
-- Don't improvise - skills contain tested procedures
+**CRITICAL**: Before answering any blockchain/Web3 question, check what skills you have installed.
 
-**🔌 MCP Tools:**
-- MCP servers provide blockchain and external service access
+**Your skills live here:** `~/.openclaw/skills/`
+
+**This workspace comes with 4 pre-installed skills:**
+- `sunswap`
+- `8004-skill`
+- `x402-payment`
+- `x402-payment-demo`
+
+**Always read the SKILL.md before using any skill:**
+```bash
+cat ~/.openclaw/skills/[skill-name]/SKILL.md
+```
+
+Each SKILL.md contains complete documentation on what the skill does and how to use it.
+
+### 📖 Using Skills - Read Before You Act!
+
+**IMPORTANT**: Only read skills when you actually need them. Don't load all skills at once - this wastes context.
+
+**MANDATORY WORKFLOW (when you need a skill):**
+
+1. **Check if skill exists:**
+   ```bash
+   ls ~/.openclaw/skills/[skill-name]/SKILL.md
+   ```
+
+2. **Read the SKILL.md only when needed:**
+   ```bash
+   cat ~/.openclaw/skills/[skill-name]/SKILL.md
+   ```
+
+3. **Follow documented procedures** - Don't improvise!
+
+4. **Check for scripts if mentioned in SKILL.md:**
+   ```bash
+   ls ~/.openclaw/skills/[skill-name]/scripts/
+   ```
+
+**Example workflow:**
+```bash
+# User asks about token swaps
+# → Now you need the sunswap skill
+
+# Step 1: Verify skill exists
+ls ~/.openclaw/skills/sunswap/SKILL.md
+
+# Step 2: Read the documentation
+cat ~/.openclaw/skills/sunswap/SKILL.md
+
+# Step 3: Follow the documented workflow
+```
+
+**Remember**: Read skills on-demand, not proactively. This keeps your context clean.
+
+### 🚫 Don't Hallucinate Tools!
+
+**If you don't have a skill:**
+- ❌ Don't make up commands
+- ❌ Don't guess at MCP tools
+- ✅ Tell the user: "I don't have the [X] skill installed. You can install it with..."
+
+**If you're unsure:**
+- Check `~/.openclaw/skills/` first
+- Read the SKILL.md
+- If still unclear, ask the user
+
+### 🔌 MCP Tools
+
+MCP servers provide blockchain and external service access:
 - Check tool parameters carefully - they're strictly typed
 - If a tool fails, read error messages for required parameters
+- MCP tools are listed in your system prompt (if configured)
 
 **🎭 Voice Storytelling:** If you have `sag` (ElevenLabs TTS), use voice for stories, movie summaries, and "storytime" moments! Way more engaging than walls of text. Surprise people with funny voices.
 
@@ -230,9 +294,14 @@ This is a starting point. Add your own conventions, style, and rules as you figu
 
 ## 🛠 Skills
 
-Skills are in `~/.openclaw/skills/` - **always read the skill's SKILL.md before using it**.
+**Your skills are in:** `~/.openclaw/skills/`
 
-When you start, explore what skills are available by checking that directory.
+**Before answering Web3 questions:**
+1. Check what skills you have: `ls ~/.openclaw/skills/`
+2. Read the relevant SKILL.md file
+3. Follow the documented workflow exactly
+
+**Don't guess or improvise** - if you don't have a skill, tell the user how to install it.
 
 ## 🚨 Critical Rules
 

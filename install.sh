@@ -497,6 +497,39 @@ copy_skill() {
         configure_8004_key
     fi
     
+    # Special handling for sunswap: remind about private key
+    if [ "$skill_id" = "sunswap" ]; then
+        echo ""
+        echo -e "${BOLD}SunSwap Private Key Configuration${NC}"
+        echo -e "${MUTED}SunSwap scripts need a private key for swap operations${NC}"
+        echo ""
+        
+        # Check if key already exists
+        local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
+        local has_env_key=false
+        
+        if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
+            has_env_key=true
+        fi
+        
+        if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
+            echo -e "${SUCCESS}✓ Private key already configured (shared with 8004-skill)${NC}"
+            if [ -f "$key_file" ]; then
+                echo -e "${MUTED}  Found at: $key_file${NC}"
+            fi
+            if [ "$has_env_key" = true ]; then
+                echo -e "${MUTED}  Found in environment variable${NC}"
+            fi
+        else
+            echo -e "${INFO}Configure private key using one of these methods:${NC}"
+            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
+            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
+            echo ""
+            echo -e "${INFO}Or install 8004-skill which will guide you through the setup${NC}"
+        fi
+        echo ""
+    fi
+    
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
         echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
         INSTALLED_SKILLS+=("$skill_id")
@@ -690,9 +723,16 @@ mkdir -p "$MCP_CONFIG_DIR"
 
 npx clawhub install --force mcporter
 
-# --- Step 1: MCP Server Configuration ---
+# --- Step 1: OpenClaw Workspace Setup ---
 
-echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
+echo -e "${BOLD}Step 1: OpenClaw Workspace Setup${NC}"
+echo ""
+install_security_guidelines
+
+# --- Step 2: MCP Server Configuration ---
+
+echo ""
+echo -e "${BOLD}Step 2: MCP Server Configuration${NC}"
 echo ""
 
 SERVER_OPTIONS=(
@@ -864,10 +904,10 @@ EOF
     done
 fi
 
-# --- Step 2: Skills Installation from GitHub ---
+# --- Step 3: Skills Installation from GitHub ---
 
 echo ""
-echo -e "${BOLD}Step 2: Skills Installation from GitHub${NC}"
+echo -e "${BOLD}Step 3: Skills Installation from GitHub${NC}"
 echo ""
 
 if ! clone_skills_repo; then
@@ -924,12 +964,6 @@ else
         fi
     fi
 fi
-
-# --- Step 3: Install Security Guidelines to OpenClaw Workspace ---
-echo ""
-echo -e "${BOLD}Step 3: OpenClaw Workspace Setup${NC}"
-echo ""
-install_security_guidelines
 
 # --- Final Summary ---
 echo ""
