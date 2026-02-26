@@ -310,7 +310,7 @@ clone_skills_repo() {
     echo -e "${INFO}Cloning skills repository...${NC}"
     TEMP_DIR=$(mktemp -d)
     
-    if ! git clone --depth 1 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
+    if ! git clone --depth 1 --branch pre_releasev1.1.0 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
         echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
         return 1
     fi
