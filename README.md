@@ -58,15 +58,31 @@ The installer will let you select which skills to install during setup.
 **One-command installation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install.sh | bash
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/bankofai/openclaw-extension.git
+git clone -b dev/playbook https://github.com/bankofai/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
+```
+
+### Playbook + Persona Sync
+
+After `install.sh`, install latest AINFT playbook and workspace persona files:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install_playbook.sh | bash
+```
+
+### One-Click Full Setup
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install.sh | bash && \
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install_playbook.sh | bash && \
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/setup_ainft.sh | bash
 ```
 
 ### What Gets Installed
@@ -76,6 +92,26 @@ cd openclaw-extension
 - ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/bankofai/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
+
+## ⚙️ AINFT Setup
+
+If you want to use AINFT as a model provider, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/setup_ainft.sh | bash
+```
+
+What this script does:
+- Configures **AINFT mainnet** provider in `~/.openclaw/openclaw.json`
+- Prompts for your AINFT API key (**hidden input**, no echo)
+- Lets you select which AINFT models to enable
+- Lets you choose a default model from the models you enabled
+- Optionally sets `agents.defaults.model.primary` to `ainft/<model>`
+- Creates a backup of `openclaw.json` before writing
+
+Before running, prepare:
+- AINFT API key from `https://chat.ainft.com/key`
+- Funded AINFT account (minimum 1 TRX or 1 USDT/USDD per AINFT page guidance)
 
 ## 🔐 Security
 
