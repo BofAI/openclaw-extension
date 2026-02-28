@@ -4,7 +4,12 @@ set -euo pipefail
 # Install latest AINFT PLAYBOOK into OpenClaw skill directory.
 # Default mode: pull from remote GitHub branch/path.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${BASH_SOURCE:-}" && -n "${BASH_SOURCE[0]:-}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+  # Support `curl ... | bash` where BASH_SOURCE may be unavailable.
+  SCRIPT_DIR="$(pwd)"
+fi
 TARGET_ROOT="${OPENCLAW_SKILLS_DIR:-$HOME/.openclaw/skills}"
 TARGET_FILE="$TARGET_ROOT/ainft-skill/PLAYBOOK.md"
 BACKUP_DIR="$HOME/.openclaw/.backup_playbook"
@@ -142,6 +147,10 @@ if [[ "$MODE" == "remote" ]]; then
     exit 1
   }
   SOURCE_FILE="$CLONE_DIR/$SKILL_PATH"
+  # Prefer local workspace templates if present; otherwise use remote repo workspace.
+  if [[ ! -d "$WORKSPACE_SOURCE_DIR" ]]; then
+    WORKSPACE_SOURCE_DIR="$CLONE_DIR/workspace"
+  fi
 else
   if [[ -z "$SOURCE_FILE" ]]; then
     echo "Error: --source requires a file path." >&2
