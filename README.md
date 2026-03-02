@@ -58,31 +58,31 @@ The installer will let you select which skills to install during setup.
 **One-command installation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install.sh | bash
 ```
 
 Or from source:
 
 ```bash
-git clone -b dev/playbook https://github.com/bankofai/openclaw-extension.git
+git clone https://github.com/bankofai/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
 ```
 
-### Playbook + Persona Sync
+### Workspace Persona Sync (Optional)
 
-After `install.sh`, install latest AINFT playbook and workspace persona files:
+After `install.sh`, sync workspace persona files:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install_playbook.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install_workspace.sh | bash
 ```
 
 ### One-Click Full Setup
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install.sh | bash && \
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/install_playbook.sh | bash && \
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/setup_ainft.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install.sh | bash && \
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install_workspace.sh | bash && \
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/setup_ainft.sh | bash
 ```
 
 ### What Gets Installed
@@ -98,7 +98,7 @@ curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/pla
 If you want to use AINFT as a model provider, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/dev/playbook/setup_ainft.sh | bash
+curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/setup_ainft.sh | bash
 ```
 
 What this script does:
@@ -110,7 +110,7 @@ What this script does:
 - Creates a backup of `openclaw.json` before writing
 
 Before running, prepare:
-- AINFT API key from `https://chat.ainft.com/key`
+- AINFT API key from `https://chat-dev.ainft.com/key`
 - Funded AINFT account (minimum 1 TRX or 1 USDT/USDD per AINFT page guidance)
 
 ## 🔐 Security

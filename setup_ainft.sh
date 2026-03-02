@@ -26,6 +26,8 @@ EOF
 echo -e "${NC}"
 
 CONFIG_FILE="$HOME/.openclaw/openclaw.json"
+AINFT_CONFIG_DIR="$HOME/.ainft"
+AINFT_CONFIG_FILE="$AINFT_CONFIG_DIR/config.json"
 
 # Check if OpenClaw is installed
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -37,15 +39,15 @@ fi
 echo -e "${GREEN}✅ Found OpenClaw configuration${NC}"
 echo ""
 
-# Step 1: Mainnet configuration
+# Step 1: Dev configuration
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}Step 1: Mainnet Configuration${NC}"
+echo -e "${BLUE}Step 1: Dev Configuration${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-ENVIRONMENT="mainnet"
-BASE_URL="https://chat.ainft.com/webapi/"
-WEB_URL="https://chat.ainft.com"
-DEPOSIT_ADDRESS="TNxh1UDWbzN8gMgfKQCSTjbB7Ugg7EuBDY"
+ENVIRONMENT="dev"
+BASE_URL="https://chat-dev.ainft.com/webapi/"
+WEB_URL="https://chat-dev.ainft.com"
+DEPOSIT_ADDRESS="TAJJNMLYBxVUdNi6UrTspkkc7aCQPbYVUp"
 
 echo ""
 echo -e "${GREEN}✅ Environment fixed: $ENVIRONMENT${NC}"
@@ -74,6 +76,28 @@ fi
 
 echo ""
 echo -e "${GREEN}✅ API key received${NC}"
+echo ""
+
+# Step 2.5: Write local AINFT skill config
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}Step 2.5: Write AINFT Skill Config${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+mkdir -p "$AINFT_CONFIG_DIR"
+if [ -f "$AINFT_CONFIG_FILE" ]; then
+    AINFT_BACKUP="${AINFT_CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$AINFT_CONFIG_FILE" "$AINFT_BACKUP"
+    echo -e "${GREEN}✅ Existing AINFT config backed up: $AINFT_BACKUP${NC}"
+fi
+cat > "$AINFT_CONFIG_FILE" <<EOF
+{
+  "api_key": "$API_KEY",
+  "base_url": "$WEB_URL",
+  "timeout_ms": 15000
+}
+EOF
+chmod 600 "$AINFT_CONFIG_FILE"
+echo -e "${GREEN}✅ AINFT skill config written: $AINFT_CONFIG_FILE${NC}"
 echo ""
 
 # Step 3: Select models
@@ -152,9 +176,7 @@ if [ "$set_default" = "y" ] || [ "$set_default" = "Y" ]; then
     echo ""
     if command -v python3 &> /dev/null; then
         ENABLED_MODELS=()
-        while IFS= read -r line; do
-            [ -n "$line" ] && ENABLED_MODELS+=("$line")
-        done < <(
+        MODEL_LIST_OUTPUT="$(
             python3 - "$MODELS" <<'PY'
 import json
 import sys
@@ -163,7 +185,12 @@ for m in json.loads(sys.argv[1]):
     if mid:
         print(f"ainft/{mid}")
 PY
-        )
+        )"
+        while IFS= read -r line; do
+            [ -n "$line" ] && ENABLED_MODELS+=("$line")
+        done <<EOF
+$MODEL_LIST_OUTPUT
+EOF
 
         echo "Select default model from enabled models:"
         for i in "${!ENABLED_MODELS[@]}"; do
@@ -248,19 +275,33 @@ if 'providers' not in config['models']:
 config['models']['mode'] = 'merge'
 
 # Add AINFT provider
+provider_models = json.loads(models_json)
 config['models']['providers']['ainft'] = {
     'baseUrl': base_url,
     'apiKey': api_key,
     'api': 'openai-completions',
-    'models': json.loads(models_json)
+    'models': provider_models
 }
+
+# Ensure enabled AINFT models are in agents.defaults.models allowlist (if used).
+if 'agents' not in config:
+    config['agents'] = {}
+if 'defaults' not in config['agents']:
+    config['agents']['defaults'] = {}
+
+allowlist = config['agents']['defaults'].get('models')
+if not isinstance(allowlist, dict):
+    allowlist = {}
+
+for m in provider_models:
+    mid = m.get('id')
+    if mid:
+        allowlist.setdefault(f'ainft/{mid}', {})
+
+config['agents']['defaults']['models'] = allowlist
 
 # Set default model if specified
 if default_model:
-    if 'agents' not in config:
-        config['agents'] = {}
-    if 'defaults' not in config['agents']:
-        config['agents']['defaults'] = {}
     if 'model' not in config['agents']['defaults']:
         config['agents']['defaults']['model'] = {}
     
@@ -343,6 +384,7 @@ echo ""
 echo -e "${BLUE}📋 Summary:${NC}"
 echo "  Environment: $ENVIRONMENT"
 echo "  Base URL: $BASE_URL"
+echo "  AINFT Skill Config: $AINFT_CONFIG_FILE"
 echo "  Deposit Address: $DEPOSIT_ADDRESS"
 if [ -n "$DEFAULT_MODEL" ]; then
     echo "  Default Model: $DEFAULT_MODEL"
