@@ -1022,6 +1022,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo ""
 fi
 
-echo -e "${MUTED}Repository: https://github.com/bankofai/openclaw-extension${NC}"
+echo -e "${MUTED}Repository: https://github.com/BofAI/openclaw-extension${NC}"
 echo -e "${MUTED}Skills: https://github.com/BofAI/skills${NC}"
 echo ""

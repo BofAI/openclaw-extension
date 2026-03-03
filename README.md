@@ -58,13 +58,13 @@ The installer will let you select which skills to install during setup.
 **One-command installation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/bankofai/openclaw-extension.git
+git clone https://github.com/BofAI/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
 ```

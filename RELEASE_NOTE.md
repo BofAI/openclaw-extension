@@ -33,7 +33,7 @@ We've introduced a new interactive installer to get you started in seconds.
 
 ```bash
 # Install / Update to v1.0.0
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
 The installer will:
@@ -43,4 +43,4 @@ The installer will:
 
 ## 🔗 Links
 - **MCP Server Source**: [bankofai/mcp-server-tron](https://github.com/bankofai/mcp-server-tron)
-- **Extension Repo**: [bankofai/openclaw-extension](https://github.com/bankofai/openclaw-extension)
+- **Extension Repo**: [BofAI/openclaw-extension](https://github.com/BofAI/openclaw-extension)
