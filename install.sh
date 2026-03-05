@@ -761,10 +761,10 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 # --- Step 1: Install mcp-server-tron ---
-                 echo -e "${INFO}Installing @bankofai/mcp-server-tron...${NC}"
-                 if npm install --global --no-save @bankofai/mcp-server-tron >/dev/null 2>&1; then
-                     echo -e "${SUCCESS}✓ mcp-server-tron installed${NC}"
+                 # --- Step 1: Install mcp-server-tron and agent-wallet ---
+                 echo -e "${INFO}Installing @bankofai/mcp-server-tron and @bankofai/agent-wallet...${NC}"
+                 if npm install --global --no-save @bankofai/mcp-server-tron @bankofai/agent-wallet >/dev/null 2>&1; then
+                     echo -e "${SUCCESS}✓ mcp-server-tron and agent-wallet installed${NC}"
                  else
                      echo -e "${WARN}⚠ Pre-install failed, continuing anyway${NC}"
                  fi
@@ -778,14 +778,14 @@ else
                  read -r init_wallet <&3
                  if [[ "$init_wallet" =~ ^[Yy]$ ]]; then
                      echo ""
-                     echo -e "${INFO}Running: npx @bankofai/agent-wallet init --dir ~/.agent-wallet${NC}"
-                     npx @bankofai/agent-wallet init --dir ~/.agent-wallet <&3 || true
+                     echo -e "${INFO}Running: agent-wallet init --dir ~/.agent-wallet${NC}"
+                     agent-wallet init --dir ~/.agent-wallet <&3 || true
                      echo ""
-                     echo -e "${INFO}Running: npx @bankofai/agent-wallet add --dir ~/.agent-wallet${NC}"
-                     npx @bankofai/agent-wallet add --dir ~/.agent-wallet <&3 || true
+                     echo -e "${INFO}Running: agent-wallet add --dir ~/.agent-wallet${NC}"
+                     agent-wallet add --dir ~/.agent-wallet <&3 || true
                      echo ""
-                     echo -e "${INFO}Running: npx @bankofai/agent-wallet list --dir ~/.agent-wallet${NC}"
-                     npx @bankofai/agent-wallet list --dir ~/.agent-wallet 2>/dev/null || true
+                     echo -e "${INFO}Running: agent-wallet list --dir ~/.agent-wallet${NC}"
+                     agent-wallet list --dir ~/.agent-wallet 2>/dev/null || true
                  fi
                  echo ""
 
