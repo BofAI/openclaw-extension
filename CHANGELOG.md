@@ -5,6 +5,16 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-03-05
+
+### Changed
+- **Agent-wallet mode for TRON**: Installer now uses agent-wallet (encrypted keystore) instead of plaintext `TRON_PRIVATE_KEY`. Private keys are never stored in config files.
+- Removed legacy private key and environment variable credential options for mcp-server-tron.
+- Updated mcp-server-tron to v1.1.3 with 95 MCP tools (up from 26).
+
+### Security
+- TRON wallet credentials now use encrypted keystore (Keystore V3: scrypt + AES-128-CTR) via agent-wallet SDK.
+
 ## [1.0.2] - 2026-02-09
 
 ### Added

@@ -761,68 +761,47 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
+                 echo -e "${BOLD}Agent-wallet setup (encrypted keystore):${NC}"
+                 echo -e "${MUTED}Private keys are encrypted at rest and never exposed in plaintext.${NC}"
                  echo ""
-                 
-                 # Ask for credential storage method
-                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
-                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
-                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
-                 echo -e "  ${INFO}2)${NC} Use environment variables"
-                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
+                 echo -e "${MUTED}If you haven't initialized a wallet yet, run:${NC}"
+                 echo -e "${INFO}  npx agent-wallet init --dir ~/.agent-wallet${NC}"
+                 echo -e "${INFO}  npx agent-wallet add --dir ~/.agent-wallet${NC}"
+                 echo -e "${INFO}  npx agent-wallet list --dir ~/.agent-wallet${NC}"
                  echo ""
-                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
-                 
-                 read -r cred_choice <&3
-                 cred_choice=${cred_choice:-2}
-                 
-                 echo ""
-                 
-                 if [ "$cred_choice" = "1" ]; then
-                     # Store in config file
-                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 1 "Your TRON wallet private key. Required for signing transactions."
-                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Your TronGrid API Key. Required for reliable network access."
 
-                     echo -e "${MUTED}Saving configuration...${NC}"
+                 ask_input "Enter AGENT_WALLET_DIR" AW_DIR 0 "Path to agent-wallet directory (default: ~/.agent-wallet)"
+                 if [ -z "$AW_DIR" ]; then AW_DIR="$HOME/.agent-wallet"; fi
 
-                     TRON_KEY_VAL="\"$TRON_KEY\""
-                     if [ -z "$TRON_KEY" ]; then TRON_KEY_VAL="null"; fi
+                 ask_input "Enter AGENT_WALLET_PASSWORD" AW_PASSWORD 1 "Master password for agent-wallet"
 
-                     TRON_API_KEY_VAL="\"$TRON_API_KEY\""
-                     if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
+                 ask_input "Enter AGENT_WALLET_ID" AW_ID 0 "Wallet ID (leave empty to auto-select first wallet)"
 
-                     JSON_PAYLOAD=$(cat <<EOF
+                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "TronGrid API Key for reliable mainnet access"
+
+                 echo -e "${MUTED}Saving configuration...${NC}"
+
+                 AW_DIR_VAL="\"$AW_DIR\""
+                 AW_PASSWORD_VAL="\"$AW_PASSWORD\""
+                 if [ -z "$AW_PASSWORD" ]; then AW_PASSWORD_VAL="null"; fi
+                 AW_ID_VAL="\"$AW_ID\""
+                 if [ -z "$AW_ID" ]; then AW_ID_VAL="null"; fi
+                 TRON_API_KEY_VAL="\"$TRON_API_KEY\""
+                 if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
+
+                 JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"],
   "env": {
-    "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
+    "AGENT_WALLET_DIR": $AW_DIR_VAL,
+    "AGENT_WALLET_PASSWORD": $AW_PASSWORD_VAL,
+    "AGENT_WALLET_ID": $AW_ID_VAL,
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
   }
 }
 EOF
 )
-                 else
-                     # Use environment variables
-                     echo -e "${INFO}Using environment variables for credentials.${NC}"
-                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
-                     echo ""
-                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
-                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
-                     echo ""
-                     
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"]
-}
-EOF
-)
-                 fi
-                 
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
             

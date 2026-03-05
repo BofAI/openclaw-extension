@@ -49,7 +49,7 @@ The installer will let you select which skills to install during setup.
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **TRON Wallet** (Private Key & API Key for TRON network interaction)
+- **TRON Wallet** (via agent-wallet encrypted keystore, or TronGrid API Key for read-only)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
@@ -79,36 +79,32 @@ cd openclaw-extension
 
 ## 🔐 Security
 
-### Credential Storage Options
+### TRON Wallet (agent-wallet)
 
-The installer offers two methods for storing blockchain credentials:
+mcp-server-tron uses **agent-wallet** for encrypted key storage. Private keys are encrypted at rest (Keystore V3: scrypt + AES-128-CTR) and never exposed in plaintext.
 
-**Option 1: Config File Storage**
-- Keys stored in `~/.mcporter/mcporter.json`
-- Convenient but less secure (plaintext)
-- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
-- Never share or commit this file to version control
+```bash
+# Initialize wallet
+npx agent-wallet init --dir ~/.agent-wallet
+npx agent-wallet add --dir ~/.agent-wallet
+npx agent-wallet list --dir ~/.agent-wallet
+```
 
-**Option 2: Environment Variables (Recommended)**
-- Keys read from shell environment
-- More secure, not stored in config files
-- Add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.):
-  ```bash
-  # For TRON
-  export TRON_PRIVATE_KEY="your_private_key_here"
-  export TRONGRID_API_KEY="your_api_key_here"
-  
-  # For BSC/EVM chains
-  export PRIVATE_KEY="0x_your_private_key_here"
-  ```
-- Restart your shell or run `source ~/.zshrc` after adding
+The installer will prompt for `AGENT_WALLET_DIR` and `AGENT_WALLET_PASSWORD` and save them to `~/.mcporter/mcporter.json`.
+
+### BNB Chain
+
+For bnbchain-mcp, credentials can be stored in the config file or via environment variables:
+```bash
+export PRIVATE_KEY="0x_your_private_key_here"
+```
 
 ### Best Practices
 
 - Use dedicated agent wallets with limited funds
 - Never use your main personal wallet
 - Test on testnets (Nile for TRON, BSC Testnet for BSC) before using mainnet
-- Do not allow AI agents to scan files containing private keys
+- Secure config file: `chmod 600 ~/.mcporter/mcporter.json`
 
 ## Use at your own risk
 
