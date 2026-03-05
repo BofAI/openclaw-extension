@@ -85,9 +85,9 @@ mcp-server-tron uses **agent-wallet** for encrypted key storage. Private keys ar
 
 ```bash
 # Initialize wallet
-npx agent-wallet init --dir ~/.agent-wallet
-npx agent-wallet add --dir ~/.agent-wallet
-npx agent-wallet list --dir ~/.agent-wallet
+npx @bankofai/agent-wallet init --dir ~/.agent-wallet
+npx @bankofai/agent-wallet add --dir ~/.agent-wallet
+npx @bankofai/agent-wallet list --dir ~/.agent-wallet
 ```
 
 The installer will prompt for `AGENT_WALLET_DIR` and `AGENT_WALLET_PASSWORD` and save them to `~/.mcporter/mcporter.json`.

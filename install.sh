@@ -778,14 +778,14 @@ else
                  read -r init_wallet <&3
                  if [[ "$init_wallet" =~ ^[Yy]$ ]]; then
                      echo ""
-                     echo -e "${INFO}Running: npx agent-wallet init --dir ~/.agent-wallet${NC}"
-                     npx agent-wallet init --dir ~/.agent-wallet <&3 || true
+                     echo -e "${INFO}Running: npx @bankofai/agent-wallet init --dir ~/.agent-wallet${NC}"
+                     npx @bankofai/agent-wallet init --dir ~/.agent-wallet <&3 || true
                      echo ""
-                     echo -e "${INFO}Running: npx agent-wallet add --dir ~/.agent-wallet${NC}"
-                     npx agent-wallet add --dir ~/.agent-wallet <&3 || true
+                     echo -e "${INFO}Running: npx @bankofai/agent-wallet add --dir ~/.agent-wallet${NC}"
+                     npx @bankofai/agent-wallet add --dir ~/.agent-wallet <&3 || true
                      echo ""
-                     echo -e "${INFO}Running: npx agent-wallet list --dir ~/.agent-wallet${NC}"
-                     npx agent-wallet list --dir ~/.agent-wallet 2>/dev/null || true
+                     echo -e "${INFO}Running: npx @bankofai/agent-wallet list --dir ~/.agent-wallet${NC}"
+                     npx @bankofai/agent-wallet list --dir ~/.agent-wallet 2>/dev/null || true
                  fi
                  echo ""
 
