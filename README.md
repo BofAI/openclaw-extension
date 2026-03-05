@@ -1,6 +1,6 @@
 # OpenClaw Extension
 
-OpenClaw Extension is a suite of tools developed by **BankofAI** to empower AI Agents with financial sovereignty. It enables agents to hold wallets, execute transactions, and monetize services using the **x402 Protocol** (HTTP 402 Payment Required).
+OpenClaw Extension is a suite of tools developed by **BofAI** to empower AI Agents with financial sovereignty. It enables agents to hold wallets, execute transactions, and monetize services using the **x402 Protocol** (HTTP 402 Payment Required).
 
 ## 🚀 Mission
 
@@ -18,7 +18,7 @@ This extension provides two main components:
 
 Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
-- **[mcp-server-tron](https://github.com/bankofai/mcp-server-tron)** - TRON blockchain interaction
+- **[mcp-server-tron](https://github.com/BofAI/mcp-server-tron)** - TRON blockchain interaction
   - Balance checks, transfers, smart contract calls
   - Resource estimation (Energy/Bandwidth)
   - Multi-network support (Mainnet, Nile, Shasta)
@@ -30,7 +30,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 ### 2. Skills
 
-Pre-built workflows and tools from the **[skills repository](https://github.com/bankofai/skills)**:
+Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
@@ -38,7 +38,7 @@ Pre-built workflows and tools from the **[skills repository](https://github.com/
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol)
 - **x402-payment-demo** - Demo of x402 payment protocol
 
-For complete documentation and usage instructions, see the [skills repository](https://github.com/bankofai/skills).
+For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
 The installer will let you select which skills to install during setup.
 
@@ -58,13 +58,13 @@ The installer will let you select which skills to install during setup.
 **One-command installation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/refs/heads/pre_release/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/pre_release/install.sh | bash
 ```
 
 Or from source:
 
 ```bash
-git clone -b pre_release https://github.com/bankofai/openclaw-extension.git
+git clone -b pre_release https://github.com/BofAI/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
 ```
@@ -73,7 +73,7 @@ cd openclaw-extension
 
 - ✅ **MCP servers** - TRON and BSC blockchain access configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/bankofai/skills)
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/BofAI/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 

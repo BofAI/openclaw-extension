@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# OpenClaw Extension Installer (by BankofAI)
+# OpenClaw Extension Installer (by BofAI)
 # Installs MCP server and TRON skills from GitHub
 
 # --- Colors & Styling ---
@@ -28,7 +28,7 @@ MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
-GITHUB_REPO="https://github.com/bankofai/skills.git"
+GITHUB_REPO="https://github.com/BofAI/skills.git"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -310,7 +310,7 @@ clone_skills_repo() {
     echo -e "${INFO}Cloning skills repository...${NC}"
     TEMP_DIR=$(mktemp -d)
     
-    if ! git clone --depth 1 --branch pre_releasev1.1.0 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
+    if ! git clone --depth 1 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
         echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
         return 1
     fi
@@ -712,7 +712,7 @@ install_security_guidelines() {
 # --- Main Logic ---
 
 echo -e "${ACCENT}${BOLD}"
-echo "  🦞 OpenClaw Extension Installer (by BankofAI)"
+echo "  🦞 OpenClaw Extension Installer (by BofAI)"
 echo -e "${NC}${ACCENT_DIM}  $TAGLINE${NC}"
 echo ""
 
@@ -796,7 +796,7 @@ else
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"],
+  "args": ["-y", "@BofAI/mcp-server-tron"],
   "env": {
     "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
@@ -817,7 +817,7 @@ EOF
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"]
+  "args": ["-y", "@BofAI/mcp-server-tron"]
 }
 EOF
 )
@@ -1022,6 +1022,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo ""
 fi
 
-echo -e "${MUTED}Repository: https://github.com/bankofai/openclaw-extension${NC}"
-echo -e "${MUTED}Skills: https://github.com/bankofai/skills${NC}"
+echo -e "${MUTED}Repository: https://github.com/BofAI/openclaw-extension${NC}"
+echo -e "${MUTED}Skills: https://github.com/BofAI/skills${NC}"
 echo ""
