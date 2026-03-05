@@ -761,35 +761,70 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
+                 # --- Step 1: Install mcp-server-tron ---
+                 echo -e "${INFO}Installing @bankofai/mcp-server-tron...${NC}"
+                 if npm install --global --no-save @bankofai/mcp-server-tron >/dev/null 2>&1; then
+                     echo -e "${SUCCESS}✓ mcp-server-tron installed${NC}"
+                 else
+                     echo -e "${WARN}⚠ Pre-install failed, continuing anyway${NC}"
+                 fi
+                 echo ""
+
+                 # --- Step 2: Initialize agent-wallet ---
                  echo -e "${BOLD}Agent-wallet setup (encrypted keystore):${NC}"
                  echo -e "${MUTED}Private keys are encrypted at rest and never exposed in plaintext.${NC}"
                  echo ""
-                 echo -e "${MUTED}If you haven't initialized a wallet yet, run:${NC}"
-                 echo -e "${INFO}  npx agent-wallet init --dir ~/.agent-wallet${NC}"
-                 echo -e "${INFO}  npx agent-wallet add --dir ~/.agent-wallet${NC}"
-                 echo -e "${INFO}  npx agent-wallet list --dir ~/.agent-wallet${NC}"
+                 echo -ne "${INFO}?${NC} Initialize a new agent-wallet? ${MUTED}(y/N, skip if already done)${NC}: "
+                 read -r init_wallet <&3
+                 if [[ "$init_wallet" =~ ^[Yy]$ ]]; then
+                     echo ""
+                     echo -e "${INFO}Running: npx agent-wallet init --dir ~/.agent-wallet${NC}"
+                     npx agent-wallet init --dir ~/.agent-wallet <&3 || true
+                     echo ""
+                     echo -e "${INFO}Running: npx agent-wallet add --dir ~/.agent-wallet${NC}"
+                     npx agent-wallet add --dir ~/.agent-wallet <&3 || true
+                     echo ""
+                     echo -e "${INFO}Running: npx agent-wallet list --dir ~/.agent-wallet${NC}"
+                     npx agent-wallet list --dir ~/.agent-wallet 2>/dev/null || true
+                 fi
                  echo ""
 
-                 ask_input "Enter AGENT_WALLET_DIR" AW_DIR 0 "Path to agent-wallet directory (default: ~/.agent-wallet)"
-                 if [ -z "$AW_DIR" ]; then AW_DIR="$HOME/.agent-wallet"; fi
+                 # --- Step 3: Credential storage ---
+                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
+                 echo -e "  ${INFO}1)${NC} Use environment variables ${SUCCESS}[Recommended]${NC}"
+                 echo -e "     ${MUTED}More secure, credentials read from shell environment${NC}"
+                 echo -e "  ${INFO}2)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
+                 echo -e "     ${MUTED}Convenient but credentials stored in plaintext${NC}"
+                 echo ""
+                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
 
-                 ask_input "Enter AGENT_WALLET_PASSWORD" AW_PASSWORD 1 "Master password for agent-wallet"
+                 read -r cred_choice <&3
+                 cred_choice=${cred_choice:-1}
 
-                 ask_input "Enter AGENT_WALLET_ID" AW_ID 0 "Wallet ID (leave empty to auto-select first wallet)"
+                 echo ""
 
-                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "TronGrid API Key for reliable mainnet access"
+                 if [ "$cred_choice" = "2" ]; then
+                     # Store in config file
+                     ask_input "Enter AGENT_WALLET_DIR" AW_DIR 0 "Path to agent-wallet directory (default: ~/.agent-wallet)"
+                     if [ -z "$AW_DIR" ]; then AW_DIR="$HOME/.agent-wallet"; fi
 
-                 echo -e "${MUTED}Saving configuration...${NC}"
+                     ask_input "Enter AGENT_WALLET_PASSWORD" AW_PASSWORD 1 "Master password for agent-wallet"
 
-                 AW_DIR_VAL="\"$AW_DIR\""
-                 AW_PASSWORD_VAL="\"$AW_PASSWORD\""
-                 if [ -z "$AW_PASSWORD" ]; then AW_PASSWORD_VAL="null"; fi
-                 AW_ID_VAL="\"$AW_ID\""
-                 if [ -z "$AW_ID" ]; then AW_ID_VAL="null"; fi
-                 TRON_API_KEY_VAL="\"$TRON_API_KEY\""
-                 if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
+                     ask_input "Enter AGENT_WALLET_ID" AW_ID 0 "Wallet ID (from agent-wallet list output)"
 
-                 JSON_PAYLOAD=$(cat <<EOF
+                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "TronGrid API Key for reliable mainnet access"
+
+                     echo -e "${MUTED}Saving configuration...${NC}"
+
+                     AW_DIR_VAL="\"$AW_DIR\""
+                     AW_PASSWORD_VAL="\"$AW_PASSWORD\""
+                     if [ -z "$AW_PASSWORD" ]; then AW_PASSWORD_VAL="null"; fi
+                     AW_ID_VAL="\"$AW_ID\""
+                     if [ -z "$AW_ID" ]; then AW_ID_VAL="null"; fi
+                     TRON_API_KEY_VAL="\"$TRON_API_KEY\""
+                     if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
+
+                     JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"],
@@ -802,6 +837,27 @@ else
 }
 EOF
 )
+                 else
+                     # Use environment variables
+                     echo -e "${INFO}Using environment variables for credentials.${NC}"
+                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
+                     echo ""
+                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
+                     echo -e "${MUTED}export AGENT_WALLET_DIR=~/.agent-wallet${NC}"
+                     echo -e "${MUTED}export AGENT_WALLET_PASSWORD=\"your_password\"${NC}"
+                     echo -e "${MUTED}export AGENT_WALLET_ID=\"your_wallet_id\"${NC}"
+                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key\"  # optional${NC}"
+                     echo ""
+
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bankofai/mcp-server-tron"]
+}
+EOF
+)
+                 fi
+
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
             
