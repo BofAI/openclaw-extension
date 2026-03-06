@@ -796,7 +796,7 @@ else
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@BofAI/mcp-server-tron"],
+  "args": ["-y", "@bankofai/mcp-server-tron"],
   "env": {
     "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
@@ -817,7 +817,7 @@ EOF
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@BofAI/mcp-server-tron"]
+  "args": ["-y", "@bankofai/mcp-server-tron"]
 }
 EOF
 )
