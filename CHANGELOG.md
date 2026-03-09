@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Credential Storage Options**: Users can now choose between two storage methods:
   - Config file storage (convenient, plaintext in `~/.mcporter/mcporter.json`)
   - Environment variables (more secure, recommended)
-- **GitHub Skills Integration**: Automatic cloning and installation from [skills](https://github.com/bankofai/skills)
+- **GitHub Skills Integration**: Automatic cloning and installation from [skills](https://github.com/BofAI/skills)
   - Auto-discovery of all available skills
   - Interactive multi-select menu
   - Flexible installation locations (user-level, workspace-level, custom)

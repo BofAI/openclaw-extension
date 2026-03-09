@@ -28,7 +28,7 @@ MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
-GITHUB_REPO="https://github.com/bankofai/skills.git"
+GITHUB_REPO="https://github.com/BofAI/skills.git"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -1022,6 +1022,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo ""
 fi
 
-echo -e "${MUTED}Repository: https://github.com/bankofai/openclaw-extension${NC}"
-echo -e "${MUTED}Skills: https://github.com/bankofai/skills${NC}"
+echo -e "${MUTED}Repository: https://github.com/BofAI/openclaw-extension${NC}"
+echo -e "${MUTED}Skills: https://github.com/BofAI/skills${NC}"
 echo ""

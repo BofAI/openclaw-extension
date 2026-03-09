@@ -30,7 +30,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 ### 2. Skills
 
-Pre-built workflows and tools from the **[skills repository](https://github.com/bankofai/skills)**:
+Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
@@ -38,7 +38,7 @@ Pre-built workflows and tools from the **[skills repository](https://github.com/
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol)
 - **x402-payment-demo** - Demo of x402 payment protocol
 
-For complete documentation and usage instructions, see the [skills repository](https://github.com/bankofai/skills).
+For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
 The installer will let you select which skills to install during setup.
 
@@ -58,68 +58,24 @@ The installer will let you select which skills to install during setup.
 **One-command installation:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/bankofai/openclaw-extension.git
+git clone https://github.com/BofAI/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
-```
-
-### Workspace Persona Sync (Optional)
-
-After `install.sh`, sync workspace persona files:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install_workspace.sh | bash
-```
-
-### One-Click Full Setup
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install.sh | bash && \
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/install_workspace.sh | bash && \
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/setup_ainft.sh | bash
 ```
 
 ### What Gets Installed
 
 - ✅ **MCP servers** - TRON and BSC blockchain access configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/bankofai/skills)
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
-
-## ⚙️ AINFT Setup
-
-If you want to use AINFT as a model provider, run:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/setup_ainft.sh | bash
-```
-
-What this script does:
-- Checks Node.js version (`>=22`) and existing OpenClaw config
-- Prompts for your AINFT API key (**hidden input**, no echo)
-- Validates the API key against the AINFT production API
-- Dynamically fetches the latest available AINFT models from `config.getGlobalConfig`
-- Lets you select which AINFT models to enable
-- Lets you choose a default model from the models you enabled (recommended: `gpt-5-nano`)
-- Writes the provider to `~/.openclaw/openclaw.json`
-- Optionally sets `agents.defaults.model.primary` and runs `openclaw models set`
-- Creates a backup of `openclaw.json` before writing
-
-Before running, prepare:
-- AINFT API key from `https://chat.ainft.com/key`
-
-After installation, test with:
-
-```bash
-openclaw agent --agent main --message "你好"
-```
 
 ## 🔐 Security
 
