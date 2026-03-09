@@ -404,6 +404,26 @@ BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
 cp "$CONFIG_FILE" "$BACKUP_FILE"
 echo -e "${GREEN}✅ Backup created: $BACKUP_FILE${NC}"
 
+HAS_MAIN_AGENT_OVERRIDE="$(
+    python3 - "$CONFIG_FILE" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], "r", encoding="utf-8") as f:
+        config = json.load(f)
+except Exception:
+    print("0")
+    raise SystemExit(0)
+
+agent_list = ((config.get("agents") or {}).get("list"))
+if isinstance(agent_list, list) and any(isinstance(agent, dict) and agent.get("id") == "main" for agent in agent_list):
+    print("1")
+else:
+    print("0")
+PY
+)"
+
 # Create Python script to update JSON
 PYTHON_SCRIPT=$(cat <<'PYTHON_EOF'
 import json
@@ -545,11 +565,15 @@ if command -v openclaw &> /dev/null; then
     openclaw gateway restart
     echo -e "${GREEN}✅ OpenClaw restarted${NC}"
     if [ -n "$DEFAULT_MODEL" ]; then
-        echo "Setting OpenClaw default model to $DEFAULT_MODEL..."
-        if openclaw models set "$DEFAULT_MODEL" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ OpenClaw default model updated${NC}"
+        if [ "$HAS_MAIN_AGENT_OVERRIDE" = "1" ]; then
+            echo "Setting OpenClaw default model to $DEFAULT_MODEL..."
+            if openclaw models set "$DEFAULT_MODEL" >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ OpenClaw default model updated${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Failed to apply default model via CLI. The config file was updated directly.${NC}"
+            fi
         else
-            echo -e "${YELLOW}⚠️  Failed to apply default model via CLI. The config file was updated directly.${NC}"
+            echo -e "${GREEN}✅ Default model saved in config without materializing agents.list.main${NC}"
         fi
     fi
 else
@@ -557,8 +581,12 @@ else
     echo "Please manually restart OpenClaw gateway:"
     echo "  openclaw gateway restart"
     if [ -n "$DEFAULT_MODEL" ]; then
-        echo "If your config already has agents.list.main.model, make sure it matches too."
-        echo "This script already updates both agents.defaults.model.primary and agents.list.main.model."
+        if [ "$HAS_MAIN_AGENT_OVERRIDE" = "1" ]; then
+            echo "This script updated both agents.defaults.model.primary and agents.list.main.model."
+        else
+            echo "This script updated agents.defaults.model.primary only."
+            echo "No agents.list.main.model was created."
+        fi
     fi
 fi
 
