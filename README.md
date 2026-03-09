@@ -102,16 +102,24 @@ curl -fsSL https://raw.githubusercontent.com/bankofai/openclaw-extension/main/se
 ```
 
 What this script does:
-- Configures **AINFT mainnet** provider in `~/.openclaw/openclaw.json`
+- Checks Node.js version (`>=22`) and existing OpenClaw config
 - Prompts for your AINFT API key (**hidden input**, no echo)
+- Validates the API key against the AINFT production API
+- Dynamically fetches the latest available AINFT models from `config.getGlobalConfig`
 - Lets you select which AINFT models to enable
-- Lets you choose a default model from the models you enabled
-- Optionally sets `agents.defaults.model.primary` to `ainft/<model>`
+- Lets you choose a default model from the models you enabled (recommended: `gpt-5-nano`)
+- Writes the provider to `~/.openclaw/openclaw.json`
+- Optionally sets `agents.defaults.model.primary` and runs `openclaw models set`
 - Creates a backup of `openclaw.json` before writing
 
 Before running, prepare:
-- AINFT API key from `https://chat-dev.ainft.com/key`
-- Funded AINFT account (minimum 1 TRX or 1 USDT/USDD per AINFT page guidance)
+- AINFT API key from `https://chat.ainft.com/key`
+
+After installation, test with:
+
+```bash
+openclaw agent --agent main --message "你好"
+```
 
 ## 🔐 Security
 

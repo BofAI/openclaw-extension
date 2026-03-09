@@ -1,17 +1,8 @@
-# USER.md - About Your Human
+# USER.md - User Notes
 
-_Learn about the person you're helping. Update this as you go._
+- Name: bobo
+- Preferred name: bobo
+- Timezone: Asia/Shanghai
+- Notes: Works on OpenClaw, AINFT, Web3/payment integrations, and local agent workflows
 
-- **Name:**
-- **What to call them:**
-- **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
-
-## Context
-
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
-
----
-
-The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
+Update this file only with useful working context.
