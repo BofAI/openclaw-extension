@@ -1,147 +1,159 @@
 # AINFT Integration Guide
 
-Quick guide to integrate AINFT AI models with OpenClaw.
+This guide reflects the current AINFT integration flow in this repository.
 
-## What is AINFT?
+## Scope
 
-AINFT is an AI model provider on TRON that supports multiple models (GPT-5, Claude-4.5, Gemini-3) with crypto payment.
+There are two separate AINFT integration surfaces:
 
-## 🚀 Quick Setup (One-Click Script)
+1. **AINFT model provider**
+   - Configured by `setup_ainft.sh`
+   - Writes the AINFT provider into `~/.openclaw/openclaw.json`
+   - Stores the local AINFT API key in `~/.ainft/config.json`
 
-The easiest way to configure AINFT:
+2. **AINFT local skill**
+   - Installed as `ainft-skill`
+   - Supports local balance and order queries only
+   - Does not execute recharge or payment flows
+
+## Production Only
+
+The current setup script is fixed to **production**.
+
+- Web: `https://chat.ainft.com`
+- API base URL: `https://chat.ainft.com/webapi/`
+- OpenAI-compatible chat endpoint: `https://chat.ainft.com/webapi/chat/completions`
+
+## Quick Setup
+
+Run:
 
 ```bash
 bash setup_ainft.sh
 ```
 
-The script will guide you through:
-1. Mainnet configuration
-2. Getting/entering your API key
-3. Selecting models to enable
-4. Setting default model (optional)
-   - Default model choices are shown from the models you enabled in step 3
-5. Automatic configuration update
-6. OpenClaw restart
+What the script does:
 
-## Manual Setup
+1. Validates that `~/.openclaw/openclaw.json` already exists
+2. Checks that `Node.js >= 22` and `python3` are available
+3. Prompts for an AINFT API key
+4. Validates the key against the production chat completions endpoint
+5. Fetches the live model list from `config.getGlobalConfig`
+6. Writes local AINFT config to `~/.ainft/config.json`
+7. Writes the AINFT provider to `~/.openclaw/openclaw.json`
+8. Updates `agents.defaults.model.primary`
+9. Updates `agents.list.main.model` only if `main` already exists
+10. Restarts the OpenClaw gateway
 
-### Step 1: Get API Key
+## Local AINFT Config
 
-1. Visit AINFT website:
-   - **Mainnet**: https://chat-dev.ainft.com/key
-
-2. Create your API key
-
-3. Deposit tokens to use the service:
-   - **Mainnet**: `TNxh1UDWbzN8gMgfKQCSTjbB7Ugg7EuBDY`
-   - Minimum: 1 TRX or 1 USDT/USDD
-
-### Step 2: Configure OpenClaw
-
-Edit your OpenClaw configuration:
-```bash
-vim ~/.openclaw/openclaw.json
-```
-
-Add AINFT provider configuration:
+The local skill config written by `setup_ainft.sh` is minimal:
 
 ```json
 {
-  "models": {
-    "mode": "merge",
-    "providers": {
-      "ainft": {
-        "baseUrl": "https://chat-dev.ainft.com/webapi/",
-        "apiKey": "YOUR_AINFT_API_KEY_HERE",
-        "api": "openai-completions",
-        "models": [
-          {"id": "gpt-5.2", "name": "gpt-5.2"},
-          {"id": "gpt-5-mini", "name": "gpt-5-mini"},
-          {"id": "gpt-5-nano", "name": "gpt-5-nano"},
-          {"id": "claude-opus-4.5", "name": "claude-opus-4.5"},
-          {"id": "claude-sonnet-4.5", "name": "claude-sonnet-4.5"},
-          {"id": "claude-haiku-4.5", "name": "claude-haiku-4.5"},
-          {"id": "gemini-3-pro", "name": "gemini-3-pro"},
-          {"id": "gemini-3-flash", "name": "gemini-3-flash"}
-        ]
-      }
-    }
-  }
+  "api_key": "YOUR_AINFT_API_KEY",
+  "base_url": "https://chat.ainft.com",
+  "timeout_ms": 15000
 }
 ```
 
-### Step 3: Set Default Model (Optional)
-
-To use AINFT models by default, add to your `openclaw.json`:
-
-```json
-{
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "ainft/gpt-5-nano"
-      }
-    }
-  }
-}
-```
-
-### Step 4: Restart OpenClaw
+This file lives at:
 
 ```bash
-openclaw gateway restart
+~/.ainft/config.json
 ```
 
-## Available Models
+## OpenClaw Provider Config
 
-| Model | Description | Use Case |
-|-------|-------------|----------|
-| gpt-5.2 | Most capable | Complex tasks |
-| gpt-5-mini | Balanced | General use |
-| gpt-5-nano | Fast & cheap | Simple tasks |
-| claude-opus-4.5 | Most capable Claude | Analysis, coding |
-| claude-sonnet-4.5 | Balanced Claude | General use |
-| claude-haiku-4.5 | Fast Claude | Quick responses |
-| gemini-3-pro | Most capable Gemini | Multimodal tasks |
-| gemini-3-flash | Fast Gemini | Quick responses |
+The provider written into `~/.openclaw/openclaw.json` uses:
 
-## Usage
+- `api = openai-completions`
+- `baseUrl = https://chat.ainft.com/webapi/`
+- a dynamic model list fetched from AINFT production
 
-Once configured, you can use AINFT models in OpenClaw:
+If you choose to set AINFT as the default model provider, the script updates:
+
+- `agents.defaults.model.primary`
+- `agents.list.main.model` only when `main` is already materialized in config
+
+If `agents.list.main` does not exist, the script does **not** create it.
+
+## Manual Validation
+
+After setup, test with:
 
 ```bash
-# Use specific model
-openclaw chat --model ainft/gpt-5-nano
-
-# Or if set as default, just use normally
-openclaw chat
+openclaw agent --agent main --message "你好"
 ```
 
-## Environment
+If you want to force a specific AINFT model first:
 
-| Environment | Web | API BaseURL | Deposit Address |
-|-------------|-----|-------------|-----------------|
-| **Mainnet** | https://chat-dev.ainft.com/ | https://chat-dev.ainft.com/webapi/ | TNxh1UDWbzN8gMgfKQCSTjbB7Ugg7EuBDY |
+```bash
+openclaw models set ainft/gpt-5-nano
+openclaw agent --agent main --message "你好"
+```
+
+## AINFT Skill
+
+The current `ainft-skill` is intentionally small.
+
+Supported local scripts:
+
+```bash
+node ~/.openclaw/skills/ainft-skill/scripts/check_balance.js --format json
+node ~/.openclaw/skills/ainft-skill/scripts/check_orders.js --format json
+```
+
+Current scope:
+
+- balance query
+- order query
+
+Out of scope:
+
+- recharge
+- merchant settlement
+- native TRX / BNB transfer flows
+
+## AINFT Merchant MCP
+
+If you also want remote AINFT recharge tools, install the MCP entry through `install.sh`.
+
+Current remote endpoint:
+
+```text
+https://ainft-agent.bankofai.io/mcp
+```
+
+Installed `mcporter` server id:
+
+```text
+ainft-merchant
+```
 
 ## Troubleshooting
 
-### "Invalid API key"
-- Check your API key is correct
-- Ensure you've deposited tokens to your account
+### `401 status code`
 
-### "Insufficient balance"
-- Deposit more tokens to the deposit address
-- Minimum: 1 TRX or 1 USDT/USDD
+- The API key is invalid, malformed, or expired
+- Re-run `setup_ainft.sh` and enter a single valid key
 
-### Models not showing up
-- Restart OpenClaw gateway: `openclaw gateway restart`
-- Check configuration syntax in `openclaw.json`
+### `404 status code`
 
-## Resources
+- The request is hitting the wrong endpoint or provider path
+- Re-run `setup_ainft.sh` so `baseUrl` is rewritten to the current production value
 
-- **Full Documentation**: https://github.com/RudolphHuang/openclaw_doc
-- **AINFT Mainnet**: https://chat-dev.ainft.com/
+### Default model did not change
 
----
+Check both of these fields in `~/.openclaw/openclaw.json`:
 
-**Note**: AINFT uses crypto payment. Make sure to deposit tokens before using the service.
+- `agents.defaults.model.primary`
+- `agents.list.main.model`
+
+If `agents.list.main.model` exists, it overrides the default model for `main`.
+
+## References
+
+- OpenClaw Extension README: `README.md`
+- AINFT setup script: `setup_ainft.sh`
+- AINFT skill: `../skills/ainft-skill/SKILL.md`

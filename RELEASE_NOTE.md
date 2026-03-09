@@ -1,46 +1,67 @@
-# Release Notes: OpenClaw Extension v1.0.0
+# Release Notes: OpenClaw Extension v1.0.3
 
-**Date**: February 4, 2026  
-**Version**: 1.0.0
+**Date**: March 9, 2026  
+**Version**: 1.0.3
 
-## 🚀 Overview
-We are excited to announce the launch of **OpenClaw Extension v1.0.0**, the definitive toolkit for AI Agents on the TRON network. 
+## Overview
 
-This release introduces two powerful pillars that transform how agents interact with the blockchain economy: **Direct Blockchain Access** (via MCP) and **Autonomous Payments** (via x402).
+This update aligns the extension with the current AINFT integration model and the current OpenClaw configuration behavior.
 
-## ✨ Major Features
+## Highlights
 
-### 1. 🔗 mcp-server-tron
-The bridge between your LLM and the TRON blockchain.
-- **What it is**: An [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that exposes TRON blockchain capabilities as tool-use functions for AI.
-- **Capabilities**:
-  - **Wallet**: Check balances (`get_balance`), track assets (`get_token_balance`).
-  - **DeFi**: Execute token transfers (`transfer_trc20`), interact with any smart contract (`read_contract`, `write_contract`).
-  - **Network**: Monitor chain state, block height, and energy costs.
-- **Integration**: Works out-of-the-box with any MCP-compliant client (Claude Desktop, Cursor, etc.).
+### 1. AINFT Setup Updated
 
-### 2. 💳 x402-payment
-The financial layer for the agent economy.
-- **What it is**: A specialized agent skill implementing the **HTTP 402** protocol.
-- **Use Case**: Enables agents to consume paid APIs seamlessly. When an agent hits a paywall (402 status), this skill intercepts the request, negotiates the price, pays in USDT, and retries the request—all autonomously.
-- **Features**:
-  - **Smart Approvals**: Optimizes gas usage with intelligent token approval strategies.
-  - **Settlement**: verifiable on-chain settlement for every API call.
+- `setup_ainft.sh` is now aligned to the current production flow
+- Production only:
+  - `https://chat.ainft.com`
+  - `https://chat.ainft.com/webapi/`
+- API key validation uses the live OpenAI-compatible endpoint:
+  - `/webapi/chat/completions`
+- The script fetches the live model list from AINFT instead of relying on a fixed local model table
 
-## 🛠 Installation & Setup
+### 2. OpenClaw Config Behavior Clarified
 
-We've introduced a new interactive installer to get you started in seconds.
+- The setup flow updates `agents.defaults.model.primary`
+- If `agents.list.main.model` already exists, it is also updated
+- If `agents.list.main` does not exist, the script does not force-create it
+- This avoids the earlier mismatch where `main` could silently override the configured default model
+
+### 3. AINFT Skill Simplified
+
+The current `ainft-skill` is intentionally reduced to local query functions:
+
+- `check_balance.js`
+- `check_orders.js`
+
+The skill now:
+
+- uses production by default
+- manages the local AINFT API key
+- does not include recharge execution logic
+
+### 4. AINFT Merchant MCP Added to Installer
+
+The installer now supports an optional remote MCP entry:
+
+- server id: `ainft-merchant`
+- endpoint: `https://ainft-agent.bankofai.io/mcp`
+
+This keeps recharge tooling separate from the local AINFT query skill.
+
+## Installation Summary
 
 ```bash
-# Install / Update to v1.0.0
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-The installer will:
-1.  Set up the `mcp-server-tron` in your `mcporter` configuration.
-2.  Install the `x402-payment` skill and other selected skills.
-3.  Securely configure your TRON credentials locally.
+Optional AINFT provider setup:
 
-## 🔗 Links
-- **MCP Server Source**: [bankofai/mcp-server-tron](https://github.com/bankofai/mcp-server-tron)
-- **Extension Repo**: [BofAI/openclaw-extension](https://github.com/BofAI/openclaw-extension)
+```bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/main/setup_ainft.sh | bash
+```
+
+## Notes
+
+- `install.sh` still supports the broader OpenClaw Extension install flow for MCP servers and skills
+- `setup_ainft.sh` specifically configures AINFT as a model provider in OpenClaw
+- The local AINFT skill and the remote AINFT merchant MCP are separate components by design

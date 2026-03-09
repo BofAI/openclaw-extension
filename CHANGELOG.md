@@ -5,6 +5,24 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-03-09
+
+### Added
+- **AINFT merchant MCP installer option**: `install.sh` can now register `ainft-merchant` in `~/.mcporter/mcporter.json`
+  - Remote endpoint: `https://ainft-agent.bankofai.io/mcp`
+- **Current AINFT release notes**: refreshed `RELEASE_NOTE.md` to match the current production setup and installer behavior
+
+### Changed
+- **AINFT setup docs aligned to production**:
+  - `AINFT_SETUP.md` now documents `https://chat.ainft.com`
+  - `setup_ainft.sh` behavior is documented against the current OpenClaw config model
+- **AINFT setup model handling clarified**:
+  - updates `agents.defaults.model.primary`
+  - updates `agents.list.main.model` only when `main` already exists
+- **AINFT skill docs simplified**:
+  - production only
+  - local balance and order queries only
+
 ## [1.0.2] - 2026-02-09
 
 ### Added
