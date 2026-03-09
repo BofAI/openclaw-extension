@@ -28,19 +28,23 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Wallet operations, smart contracts, token transfers
   - Cross-chain capabilities
 
+- **AINFT merchant MCP** - Remote AINFT recharge MCP
+  - Default remote endpoint: `https://ainft-agent.bankofai.io/mcp`
+  - Exposed through `mcporter` as `ainft-merchant`
+  - Intended for AINFT recharge flows
+
 ### 2. Skills
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-**Available Skills:**
+The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
+
+Common choices include:
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
-- **x402-payment** - Enables agent payments on TRON network (x402 protocol)
-- **x402-payment-demo** - Demo of x402 payment protocol
-
-For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
-
-The installer will let you select which skills to install during setup.
+- **8004-skill** - On-chain identity, reputation, and validation for AI agents on TRON and BSC
+- **x402-payment** - x402 payment skill
+- **x402-payment-demo** - x402 demo skill
+- **ainft-skill** - Local AINFT balance and order queries
 
 ## 🛠 Installation
 
@@ -52,6 +56,7 @@ The installer will let you select which skills to install during setup.
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
+**AINFT note**: `setup_ainft.sh` requires **Node.js >= 22**.
 
 ### Quick Start
 
@@ -71,11 +76,39 @@ cd openclaw-extension
 
 ### What Gets Installed
 
-- ✅ **MCP servers** - TRON and BSC blockchain access configured in `~/.mcporter/mcporter.json`
+- ✅ **MCP servers** - TRON, BSC, and optional AINFT merchant MCP entries configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), and [skills repository](https://github.com/BofAI/skills)
+- ✅ **Workspace template** - A Web3-oriented workspace can be created at `~/.openclaw/workspace-web3` and set as the default workspace
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
+
+## AINFT Setup
+
+If you want to use AINFT as a model provider, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/main/setup_ainft.sh | bash
+```
+
+What this script does:
+- Validates the AINFT API key against the production API
+- Fetches the current model list from AINFT
+- Writes local AINFT skill config to `~/.ainft/config.json`
+- Writes the AINFT provider to `~/.openclaw/openclaw.json`
+- Updates `agents.defaults.model.primary`
+- Updates `agents.list.main.model` only if `main` already exists in config
+
+Requirements for `setup_ainft.sh`:
+- Node.js `>=22`
+- Python 3
+- Existing OpenClaw config at `~/.openclaw/openclaw.json`
+
+After setup, test with:
+
+```bash
+openclaw agent --agent main --message "你好"
+```
 
 ## 🔐 Security
 

@@ -696,17 +696,13 @@ install_security_guidelines() {
     # Show installed files
     echo ""
     echo -e "${MUTED}  Files installed:${NC}"
-    echo -e "${MUTED}    • AGENTS.md (Web3-enhanced)${NC}"
-    echo -e "${MUTED}    • BOOTSTRAP.md (first-run setup)${NC}"
-    echo -e "${MUTED}    • SOUL.md, USER.md, IDENTITY.md${NC}"
-    echo -e "${MUTED}    • TOOLS.md (Web3-enhanced)${NC}"
-    echo -e "${MUTED}    • HEARTBEAT.md${NC}"
+    echo -e "${MUTED}    • AGENTS.md${NC}"
+    echo -e "${MUTED}    • SOUL.md${NC}"
+    echo -e "${MUTED}    • IDENTITY.md${NC}"
+    echo -e "${MUTED}    • USER.md${NC}"
+    echo -e "${MUTED}    • TOOLS.md${NC}"
     echo ""
     echo -e "${INFO}OpenClaw will automatically load these files in new sessions${NC}"
-    
-    if [ -f "$workspace_dir/BOOTSTRAP.md" ]; then
-        echo -e "${INFO}Next: Start OpenClaw and follow BOOTSTRAP.md to set up your identity${NC}"
-    fi
 }
 
 # --- Main Logic ---
@@ -738,10 +734,12 @@ echo ""
 SERVER_OPTIONS=(
     "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
     "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
+    "ainft-merchant - AINFT merchant MCP (remote recharge tools)"
 )
 SERVER_IDS=(
     "mcp-server-tron"
     "bnbchain-mcp"
+    "ainft-merchant"
 )
 
 SELECTED_INDICES=()
@@ -896,6 +894,17 @@ EOF
 )
                  fi
                  
+                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 ;;
+
+            "ainft-merchant")
+                 JSON_PAYLOAD=$(cat <<EOF
+{
+  "baseUrl": "https://ainft-agent.bankofai.io/mcp"
+}
+EOF
+)
+
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
         esac
