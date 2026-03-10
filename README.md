@@ -56,7 +56,6 @@ Common choices include:
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
-**AINFT note**: `setup_ainft.sh` requires **Node.js >= 22**.
 
 ### Quick Start
 
@@ -81,33 +80,6 @@ cd openclaw-extension
 - ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
-
-## AINFT Setup
-
-If you want to use AINFT as a model provider, run:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/main/setup_ainft.sh | bash
-```
-
-What this script does:
-- Validates the AINFT API key against the production API
-- Fetches the current model list from AINFT
-- Writes local AINFT skill config to `~/.ainft/config.json`
-- Writes the AINFT provider to `~/.openclaw/openclaw.json`
-- Updates `agents.defaults.model.primary`
-- Updates `agents.list.main.model` only if `main` already exists in config
-
-Requirements for `setup_ainft.sh`:
-- Node.js `>=22`
-- Python 3
-- Existing OpenClaw config at `~/.openclaw/openclaw.json`
-
-After setup, test with:
-
-```bash
-openclaw agent --agent main --message "你好"
-```
 
 ## 🔐 Security
 

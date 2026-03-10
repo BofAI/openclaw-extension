@@ -5,28 +5,11 @@
 
 ## Overview
 
-This update aligns the extension with the current AINFT integration model and the current OpenClaw configuration behavior.
+This update keeps the extension documentation aligned with the current installer scope: MCP servers, skills, and the optional AINFT merchant MCP.
 
 ## Highlights
 
-### 1. AINFT Setup Updated
-
-- `setup_ainft.sh` is now aligned to the current production flow
-- Production only:
-  - `https://chat.ainft.com`
-  - `https://chat.ainft.com/webapi/`
-- API key validation uses the live OpenAI-compatible endpoint:
-  - `/webapi/chat/completions`
-- The script fetches the live model list from AINFT instead of relying on a fixed local model table
-
-### 2. OpenClaw Config Behavior Clarified
-
-- The setup flow updates `agents.defaults.model.primary`
-- If `agents.list.main.model` already exists, it is also updated
-- If `agents.list.main` does not exist, the script does not force-create it
-- This avoids the earlier mismatch where `main` could silently override the configured default model
-
-### 3. AINFT Skill Simplified
+### 1. AINFT Skill Simplified
 
 The current `ainft-skill` is intentionally reduced to local query functions:
 
@@ -39,7 +22,7 @@ The skill now:
 - manages the local AINFT API key
 - does not include recharge execution logic
 
-### 4. AINFT Merchant MCP Added to Installer
+### 2. AINFT Merchant MCP Added to Installer
 
 The installer now supports an optional remote MCP entry:
 
@@ -48,20 +31,19 @@ The installer now supports an optional remote MCP entry:
 
 This keeps recharge tooling separate from the local AINFT query skill.
 
+### 3. Documentation Scope Tightened
+
+- Removed AINFT provider setup guidance from the extension docs
+- Kept the docs focused on what `install.sh` manages directly
+- Reduced overlap between component docs and environment-specific setup instructions
+
 ## Installation Summary
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-Optional AINFT provider setup:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/main/setup_ainft.sh | bash
-```
-
 ## Notes
 
-- `install.sh` still supports the broader OpenClaw Extension install flow for MCP servers and skills
-- `setup_ainft.sh` specifically configures AINFT as a model provider in OpenClaw
+- `install.sh` covers the OpenClaw Extension install flow for MCP servers and skills
 - The local AINFT skill and the remote AINFT merchant MCP are separate components by design
