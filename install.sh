@@ -32,6 +32,7 @@ GITHUB_REPO="https://github.com/BofAI/skills.git"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
+AGENT_WALLET_SETUP=false
 
 # --- Cleanup ---
 cleanup() {
@@ -497,6 +498,34 @@ copy_skill() {
         configure_8004_key
     fi
     
+    # Special handling for x402-payment: show wallet mode configuration
+    if [ "$skill_id" = "x402-payment" ]; then
+        echo ""
+        echo -e "${BOLD}x402 Payment Wallet Configuration${NC}"
+        echo ""
+        if [ "${AGENT_WALLET_SETUP}" = true ]; then
+            echo -e "${SUCCESS}✓ Agent wallet is set up — x402-payment will use it automatically.${NC}"
+            echo -e "${MUTED}  Ensure these are in your shell profile:${NC}"
+            echo -e "${MUTED}    export TRON_AGENT_WALLET_NAME=\"<your-tron-wallet-name>\"${NC}"
+            echo -e "${MUTED}    export AGENT_WALLET_PASSWORD=\"<your-master-password>\"${NC}"
+        else
+            echo -e "${MUTED}x402-payment supports two wallet modes:${NC}"
+            echo ""
+            echo -e "  ${SUCCESS}★ Mode 1: Agent Wallet${NC} ${SUCCESS}[Recommended]${NC}"
+            echo -e "    ${MUTED}Encrypted key storage — keys never exposed as plaintext.${NC}"
+            echo -e "    ${MUTED}Setup: npm install -g @bankofai/agent-wallet${NC}"
+            echo -e "    ${MUTED}       agent-wallet init && agent-wallet add${NC}"
+            echo -e "    ${MUTED}Then:  export TRON_AGENT_WALLET_NAME=\"<wallet-name>\"${NC}"
+            echo -e "    ${MUTED}       export AGENT_WALLET_PASSWORD=\"<master-password>\"${NC}"
+            echo ""
+            echo -e "  ${INFO}  Mode 2: Private Key${NC}"
+            echo -e "    ${MUTED}Set: export TRON_PRIVATE_KEY=\"<your-private-key>\"${NC}"
+        fi
+        echo ""
+        echo -e "${MUTED}  Verify config: node x402-payment/dist/x402_invoke.js --check${NC}"
+        echo ""
+    fi
+
     # Special handling for sunswap: remind about private key
     if [ "$skill_id" = "sunswap" ]; then
         echo ""
@@ -709,6 +738,159 @@ install_security_guidelines() {
     fi
 }
 
+# --- Agent Wallet Setup ---
+
+setup_agent_wallet() {
+    echo ""
+    echo -e "${BOLD}Step 3: Agent Wallet Setup${NC}"
+    echo -e "${MUTED}Encrypt and manage private keys with ${BOLD}@bankofai/agent-wallet${NC}${MUTED}.${NC}"
+    echo -e "${MUTED}More secure than raw private keys — keys are encrypted at rest with a master password.${NC}"
+    echo ""
+
+    # Check if agent-wallet CLI is installed
+    local agent_wallet_installed=false
+    if command -v agent-wallet &> /dev/null; then
+        agent_wallet_installed=true
+        echo -e "${SUCCESS}✓ @bankofai/agent-wallet is installed${NC}"
+    else
+        echo -e "${WARN}@bankofai/agent-wallet is not installed.${NC}"
+        echo ""
+        echo -ne "${INFO}?${NC} Install it now? ${MUTED}(Y/n)${NC}: "
+        read -r aw_install_choice <&3
+        aw_install_choice=${aw_install_choice:-Y}
+
+        if [[ "$aw_install_choice" =~ ^[Yy]$ ]]; then
+            echo -e "${INFO}Installing @bankofai/agent-wallet globally...${NC}"
+            if npm install -g @bankofai/agent-wallet; then
+                agent_wallet_installed=true
+                echo -e "${SUCCESS}✓ @bankofai/agent-wallet installed${NC}"
+            else
+                echo -e "${ERROR}✗ Installation failed.${NC}"
+                echo -e "${INFO}Install manually and re-run: ${BOLD}npm install -g @bankofai/agent-wallet${NC}"
+                echo -e "${INFO}Then run: ${BOLD}agent-wallet init${NC}"
+                echo ""
+                return 0
+            fi
+        else
+            echo -e "${MUTED}Skipping agent wallet setup.${NC}"
+            echo ""
+            echo -e "${BOLD}To set up later:${NC}"
+            echo -e "${MUTED}  npm install -g @bankofai/agent-wallet${NC}"
+            echo -e "${MUTED}  agent-wallet init${NC}"
+            echo -e "${MUTED}  agent-wallet add   # add a tron_local or evm_local wallet${NC}"
+            echo ""
+            return 0
+        fi
+    fi
+
+    if [ "$agent_wallet_installed" = false ]; then
+        return 0
+    fi
+
+    # Resolve secrets directory
+    local aw_dir="${AGENT_WALLET_DIR:-}"
+    if [ -z "$aw_dir" ]; then
+        aw_dir="$HOME/.agent-wallet"
+    fi
+    aw_dir="${aw_dir/#\~/$HOME}"
+
+    echo ""
+
+    # Initialize if not already done
+    if [ -f "$aw_dir/master.json" ]; then
+        echo -e "${SUCCESS}✓ Already initialized: $aw_dir${NC}"
+    else
+        echo -e "${BOLD}Initialize secrets directory${NC}"
+        echo -e "${MUTED}  Creates: $aw_dir (encrypted key storage)${NC}"
+        echo ""
+        echo -ne "${INFO}?${NC} Initialize now? ${MUTED}(Y/n)${NC}: "
+        read -r aw_init_choice <&3
+        aw_init_choice=${aw_init_choice:-Y}
+
+        if [[ "$aw_init_choice" =~ ^[Yy]$ ]]; then
+            echo ""
+            echo -e "${INFO}Running: agent-wallet init${NC}"
+            echo -e "${MUTED}  You will be prompted for a master password.${NC}"
+            echo ""
+            agent-wallet init
+            echo ""
+        else
+            echo -e "${MUTED}Skipping init. Run later: ${BOLD}agent-wallet init${NC}"
+            return 0
+        fi
+    fi
+
+    # Check if initialization succeeded
+    if [ ! -f "$aw_dir/master.json" ]; then
+        echo -e "${WARN}⚠ Initialization did not complete. Run ${BOLD}agent-wallet init${NC}${WARN} manually.${NC}"
+        return 0
+    fi
+
+    # Show current wallets
+    echo -e "${INFO}Current wallets:${NC}"
+    agent-wallet list 2>/dev/null || true
+    echo ""
+
+    # Offer to add a wallet
+    echo -ne "${INFO}?${NC} Add a wallet now? ${MUTED}(Y/n)${NC}: "
+    read -r aw_add_choice <&3
+    aw_add_choice=${aw_add_choice:-Y}
+
+    if [[ "$aw_add_choice" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo -e "${BOLD}What type of wallet do you need?${NC}"
+        echo -e "  ${INFO}1)${NC} TRON wallet  ${MUTED}(tron_local — for TRON/TRC20 payments)${NC} ${SUCCESS}[Recommended]${NC}"
+        echo -e "  ${INFO}2)${NC} EVM wallet   ${MUTED}(evm_local  — for BSC/ERC20 payments)${NC}"
+        echo -e "  ${INFO}3)${NC} Both"
+        echo -e "  ${INFO}4)${NC} Skip"
+        echo ""
+        echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-4, default: 1)${NC}: "
+        read -r aw_wallet_type <&3
+        aw_wallet_type=${aw_wallet_type:-1}
+
+        case $aw_wallet_type in
+            1|3)
+                echo ""
+                echo -e "${INFO}Adding TRON wallet — Running: agent-wallet add${NC}"
+                echo -e "${MUTED}  Choose type ${BOLD}tron_local${NC}${MUTED} when prompted.${NC}"
+                echo ""
+                agent-wallet add
+                ;;
+        esac
+
+        if [ "$aw_wallet_type" = "2" ] || [ "$aw_wallet_type" = "3" ]; then
+            echo ""
+            echo -e "${INFO}Adding EVM wallet — Running: agent-wallet add${NC}"
+            echo -e "${MUTED}  Choose type ${BOLD}evm_local${NC}${MUTED} when prompted.${NC}"
+            echo ""
+            agent-wallet add
+        fi
+
+        echo ""
+        echo -e "${INFO}Updated wallet list:${NC}"
+        agent-wallet list 2>/dev/null || true
+        echo ""
+    fi
+
+    AGENT_WALLET_SETUP=true
+
+    # Environment variable instructions
+    echo ""
+    echo -e "${BOLD}Configure environment variables for x402-payment skill${NC}"
+    echo -e "${MUTED}Add these to your shell profile (${INFO}~/.zshrc${MUTED} or ${INFO}~/.bashrc${MUTED}):${NC}"
+    echo ""
+    echo -e "${MUTED}  # Agent Wallet (x402-payment — preferred over raw private key)${NC}"
+    echo -e "${MUTED}  export TRON_AGENT_WALLET_NAME=\"<your-tron-wallet-name>\"${NC}"
+    echo -e "${MUTED}  export AGENT_WALLET_PASSWORD=\"<your-master-password>\"${NC}"
+    echo -e "${MUTED}  # export EVM_AGENT_WALLET_NAME=\"<your-evm-wallet-name>\"   # optional${NC}"
+    echo -e "${MUTED}  # export AGENT_WALLET_SECRETS_DIR=\"~/.agent-wallet\"        # optional, default${NC}"
+    echo ""
+    echo ""
+    echo -e "${INFO}The x402-payment skill automatically selects the best available wallet source.${NC}"
+    echo -e "${MUTED}If agent wallet is configured, it will be preferred over raw private keys.${NC}"
+    echo -e "${MUTED}Reload your shell: ${INFO}source ~/.zshrc${NC}"
+}
+
 # --- Main Logic ---
 
 echo -e "${ACCENT}${BOLD}"
@@ -761,27 +943,65 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
-                 echo ""
-                 
-                 # Ask for credential storage method
-                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
-                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
-                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
+                 echo -e "${BOLD}How would you like to configure your wallet?${NC}"
+                 echo -e "  ${INFO}1)${NC} Use Agent Wallet ${SUCCESS}[Recommended]${NC}"
+                 echo -e "     ${MUTED}Keys encrypted at rest, mcp-server-tron will use the active TRON wallet${NC}"
                  echo -e "  ${INFO}2)${NC} Use environment variables"
-                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
+                 echo -e "     ${MUTED}Keys read from shell environment, more secure than config file${NC}"
+                 echo -e "  ${INFO}3)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
+                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but least secure${NC}"
                  echo ""
-                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
+                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
                  
                  read -r cred_choice <&3
-                 cred_choice=${cred_choice:-2}
+                 cred_choice=${cred_choice:-1}
                  
                  echo ""
                  
                  if [ "$cred_choice" = "1" ]; then
+                     echo -e "${INFO}Using Agent Wallet mode for mcp-server-tron.${NC}"
+                     echo -e "${MUTED}The MCP server will use the active TRON wallet in your agent-wallet secrets directory.${NC}"
+                     echo ""
+                     echo -e "${BOLD}Ensure these are available in your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
+                     echo -e "${MUTED}export AGENT_WALLET_PASSWORD=\"your_master_password_here\"${NC}"
+                     echo -e "${MUTED}# export AGENT_WALLET_DIR=\"~/.agent-wallet\"   # optional${NC}"
+                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"   # recommended for mainnet${NC}"
+                     echo ""
+                     echo -e "${MUTED}To change the wallet used by mcp-server-tron:${NC}"
+                     echo -e "${MUTED}  agent-wallet list${NC}"
+                     echo -e "${MUTED}  agent-wallet use <tron-wallet-id>${NC}"
+                     echo ""
+                     
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bankofai/mcp-server-tron"]
+}
+EOF
+)
+                 elif [ "$cred_choice" = "2" ]; then
+                     # Use environment variables
+                     echo -e "${INFO}Using environment variables for credentials.${NC}"
+                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
+                     echo ""
+                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
+                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
+                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
+                     echo ""
+                     
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "npx",
+  "args": ["-y", "@bankofai/mcp-server-tron"]
+}
+EOF
+)
+                 else
                      # Store in config file
+                     echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
+                     echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
+                     echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
+                     echo ""
                      ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 1 "Your TRON wallet private key. Required for signing transactions."
                      ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Your TronGrid API Key. Required for reliable network access."
 
@@ -801,23 +1021,6 @@ else
     "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
   }
-}
-EOF
-)
-                 else
-                     # Use environment variables
-                     echo -e "${INFO}Using environment variables for credentials.${NC}"
-                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
-                     echo ""
-                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
-                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
-                     echo ""
-                     
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"]
 }
 EOF
 )
@@ -904,10 +1107,14 @@ EOF
     done
 fi
 
-# --- Step 3: Skills Installation from GitHub ---
+# --- Step 3: Agent Wallet Setup ---
+
+setup_agent_wallet
+
+# --- Step 4: Skills Installation from GitHub ---
 
 echo ""
-echo -e "${BOLD}Step 3: Skills Installation from GitHub${NC}"
+echo -e "${BOLD}Step 4: Skills Installation from GitHub${NC}"
 echo ""
 
 if ! clone_skills_repo; then
@@ -976,6 +1183,13 @@ if [ "$SKIP_MCP" = false ]; then
     echo -e "${SUCCESS}✓${NC} ${BOLD}MCP Server configured${NC}"
     echo -e "  ${INFO}Config file: ${BOLD}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}→ Secure your config: ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"
+    echo ""
+fi
+
+if [ "${AGENT_WALLET_SETUP}" = true ]; then
+    echo -e "${SUCCESS}✓${NC} ${BOLD}Agent Wallet configured${NC}"
+    echo -e "  ${MUTED}Secrets dir: ${INFO}~/.agent-wallet${NC}"
+    echo -e "  ${MUTED}Set ${INFO}TRON_AGENT_WALLET_NAME${MUTED} and ${INFO}AGENT_WALLET_PASSWORD${MUTED} in your shell profile${NC}"
     echo ""
 fi
 
