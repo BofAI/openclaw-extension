@@ -540,171 +540,6 @@ copy_skill() {
     fi
 }
 
-install_security_guidelines() {
-    local workspace_dir="$HOME/.openclaw/workspace"
-    local web3_workspace="$HOME/.openclaw/workspace-web3"
-    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local workspace_template_dir="$script_dir/workspace"
-    
-    # Check if workspace template exists
-    if [ ! -d "$workspace_template_dir" ]; then
-        echo -e "${WARN}⚠ workspace template not found, skipping workspace setup${NC}"
-        return 0
-    fi
-    
-    echo -e "${BOLD}OpenClaw Workspace Setup${NC}"
-    echo ""
-    
-    # Check if workspace already exists
-    if [ -d "$workspace_dir" ] && [ "$(ls -A $workspace_dir 2>/dev/null)" ]; then
-        echo -e "${WARN}⚠ Workspace already exists: $workspace_dir${NC}"
-        echo ""
-        echo -e "Choose an option:"
-        echo -e "  ${INFO}1)${NC} Create new Web3 workspace ${SUCCESS}[Recommended]${NC}"
-        echo -e "     ${MUTED}Install to ~/.openclaw/workspace-web3 (keeps your current workspace)${NC}"
-        echo -e "     ${MUTED}Auto-switch to new workspace${NC}"
-        echo -e "  ${INFO}2)${NC} Overwrite existing workspace"
-        echo -e "     ${MUTED}Replace all files in ~/.openclaw/workspace with Web3-enhanced versions${NC}"
-        echo ""
-        echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
-        
-        read -r workspace_choice <&3
-        workspace_choice=${workspace_choice:-1}
-        
-        case $workspace_choice in
-            1)
-                # Create new Web3 workspace (default)
-                echo ""
-                echo -e "${INFO}Creating new Web3 workspace...${NC}"
-                
-                if [ -d "$web3_workspace" ] && [ "$(ls -A $web3_workspace 2>/dev/null)" ]; then
-                    echo -e "${WARN}⚠ Web3 workspace already exists: $web3_workspace${NC}"
-                    echo -ne "${INFO}?${NC} Overwrite? ${MUTED}(y/N)${NC}: "
-                    read -r confirm <&3
-                    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-                        echo -e "${MUTED}  Cancelled${NC}"
-                        return 0
-                    fi
-                fi
-                
-                # Create Web3 workspace directory
-                mkdir -p "$web3_workspace"
-                
-                # Copy all template files
-                cp -f "$workspace_template_dir"/* "$web3_workspace/"
-                
-                echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-                echo -e "${MUTED}  Location: $web3_workspace${NC}"
-                echo ""
-                
-                # Auto-switch to new workspace
-                echo -e "${INFO}Switching to new workspace...${NC}"
-                if openclaw config set agents.defaults.workspace "$web3_workspace" 2>/dev/null; then
-                    echo -e "${SUCCESS}✓ Workspace switched successfully${NC}"
-                    echo -e "${MUTED}  Active workspace: $web3_workspace${NC}"
-                    echo ""
-                    echo -e "${INFO}Restarting OpenClaw gateway...${NC}"
-                    if openclaw gateway restart 2>/dev/null; then
-                        echo -e "${SUCCESS}✓ Gateway restarted${NC}"
-                    else
-                        echo -e "${WARN}⚠ Gateway restart failed. Restart manually:${NC}"
-                        echo -e "${MUTED}  openclaw gateway restart${NC}"
-                    fi
-                else
-                    echo -e "${WARN}⚠ Auto-switch failed. Switch manually:${NC}"
-                    echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-                    echo -e "${MUTED}  openclaw gateway restart${NC}"
-                fi
-                echo ""
-                echo -e "${INFO}To switch back to your original workspace:${NC}"
-                echo -e "${MUTED}  openclaw config set agents.defaults.workspace $workspace_dir${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-                
-                workspace_dir="$web3_workspace"
-                ;;
-            2)
-                # Overwrite existing workspace
-                echo ""
-                echo -e "${WARN}⚠ This will overwrite ALL files in your workspace${NC}"
-                echo -ne "${INFO}?${NC} Are you sure? ${MUTED}(y/N)${NC}: "
-                read -r confirm <&3
-                if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-                    echo -e "${MUTED}  Cancelled${NC}"
-                    return 0
-                fi
-                
-                # Overwrite all files
-                cp -f "$workspace_template_dir"/* "$workspace_dir/"
-                
-                echo -e "${SUCCESS}✓ Workspace overwritten${NC}"
-                echo -e "${MUTED}  Location: $workspace_dir${NC}"
-                ;;
-            *)
-                echo -e "${WARN}Invalid choice, using default (create new workspace)${NC}"
-                
-                # Default: create new workspace
-                mkdir -p "$web3_workspace"
-                cp -f "$workspace_template_dir"/* "$web3_workspace/"
-                
-                echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-                echo -e "${MUTED}  Location: $web3_workspace${NC}"
-                echo ""
-                echo -e "${INFO}Switch to this workspace:${NC}"
-                echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-                
-                workspace_dir="$web3_workspace"
-                ;;
-        esac
-    else
-        # No existing workspace - create new Web3 workspace
-        echo -e "${INFO}No existing workspace found. Creating new Web3 workspace...${NC}"
-        echo ""
-        
-        # Create Web3 workspace directory
-        mkdir -p "$web3_workspace"
-        
-        # Copy all template files
-        cp -f "$workspace_template_dir"/* "$web3_workspace/"
-        
-        echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-        echo -e "${MUTED}  Location: $web3_workspace${NC}"
-        echo ""
-        
-        # Auto-switch to new workspace
-        echo -e "${INFO}Setting as default workspace...${NC}"
-        if openclaw config set agents.defaults.workspace "$web3_workspace" 2>/dev/null; then
-            echo -e "${SUCCESS}✓ Workspace configured successfully${NC}"
-            echo -e "${MUTED}  Active workspace: $web3_workspace${NC}"
-            echo ""
-            echo -e "${INFO}Restarting OpenClaw gateway...${NC}"
-            if openclaw gateway restart 2>/dev/null; then
-                echo -e "${SUCCESS}✓ Gateway restarted${NC}"
-            else
-                echo -e "${WARN}⚠ Gateway restart failed. Restart manually:${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-            fi
-        else
-            echo -e "${WARN}⚠ Auto-config failed. Configure manually:${NC}"
-            echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-            echo -e "${MUTED}  openclaw gateway restart${NC}"
-        fi
-        
-        workspace_dir="$web3_workspace"
-    fi
-    
-    # Show installed files
-    echo ""
-    echo -e "${MUTED}  Files installed:${NC}"
-    echo -e "${MUTED}    • AGENTS.md${NC}"
-    echo -e "${MUTED}    • SOUL.md${NC}"
-    echo -e "${MUTED}    • IDENTITY.md${NC}"
-    echo -e "${MUTED}    • USER.md${NC}"
-    echo -e "${MUTED}    • TOOLS.md${NC}"
-    echo ""
-    echo -e "${INFO}OpenClaw will automatically load these files in new sessions${NC}"
-}
-
 # --- Main Logic ---
 
 echo -e "${ACCENT}${BOLD}"
@@ -719,16 +554,10 @@ mkdir -p "$MCP_CONFIG_DIR"
 
 npx clawhub install --force mcporter
 
-# --- Step 1: OpenClaw Workspace Setup ---
-
-echo -e "${BOLD}Step 1: OpenClaw Workspace Setup${NC}"
-echo ""
-install_security_guidelines
-
-# --- Step 2: MCP Server Configuration ---
+# --- Step 1: MCP Server Configuration ---
 
 echo ""
-echo -e "${BOLD}Step 2: MCP Server Configuration${NC}"
+echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
 echo ""
 
 SERVER_OPTIONS=(
@@ -913,10 +742,10 @@ EOF
     done
 fi
 
-# --- Step 3: Skills Installation from GitHub ---
+# --- Step 2: Skills Installation from GitHub ---
 
 echo ""
-echo -e "${BOLD}Step 3: Skills Installation from GitHub${NC}"
+echo -e "${BOLD}Step 2: Skills Installation from GitHub${NC}"
 echo ""
 
 if ! clone_skills_repo; then
@@ -995,14 +824,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     done
     echo -e "  ${INFO}Location: ${BOLD}$TARGET_DIR${NC}"
     echo ""
-    
-    # Check if AGENTS.md was installed
-    if [ -f "$HOME/.openclaw/workspace/AGENTS.md" ]; then
-        echo -e "${SUCCESS}✓${NC} ${BOLD}Security guidelines installed${NC}"
-        echo -e "  ${INFO}Location: ${BOLD}$HOME/.openclaw/workspace/AGENTS.md${NC}"
-        echo -e "  ${MUTED}OpenClaw will automatically load these rules${NC}"
-        echo ""
-    fi
 fi
 
 if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
