@@ -29,6 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
+GITHUB_REPO_BRANCH="feat/add_agent_wallet"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -311,8 +312,8 @@ clone_skills_repo() {
     echo -e "${INFO}Cloning skills repository...${NC}"
     TEMP_DIR=$(mktemp -d)
     
-    if ! git clone --depth 1 "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
-        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
+    if ! git clone --depth 1 --branch "$GITHUB_REPO_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
+        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO (branch: $GITHUB_REPO_BRANCH)${NC}"
         return 1
     fi
     
