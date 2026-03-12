@@ -39,12 +39,14 @@ Pre-built workflows and tools from the **[skills repository](https://github.com/
 
 The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
 
-Common choices include:
+**Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **8004-skill** - On-chain identity, reputation, and validation for AI agents on TRON and BSC
-- **x402-payment** - x402 payment skill
-- **x402-payment-demo** - x402 demo skill
+- **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
+- **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
+- **x402-payment-demo** - Demo of x402 payment protocol
 - **ainft-skill** - Local AINFT balance and order queries
+
+For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
 ## 🛠 Installation
 
@@ -106,6 +108,19 @@ The installer offers two methods for storing blockchain credentials:
   export PRIVATE_KEY="0x_your_private_key_here"
   ```
 - Restart your shell or run `source ~/.zshrc` after adding
+
+**Option 3: Gasfree API Credentials (for x402-payment)**
+- Used for gasless transactions on TRON via the Gasfree service
+- Stored in `~/.x402-config.json`
+- The installer will prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` when installing the x402-payment skill
+- Secure the file with `chmod 600 ~/.x402-config.json`
+- Manual configuration:
+  ```json
+  {
+    "gasfree_api_key": "YOUR_KEY",
+    "gasfree_api_secret": "YOUR_SECRET"
+  }
+  ```
 
 ### Best Practices
 
