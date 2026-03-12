@@ -5,6 +5,20 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-12
+
+### Added
+- **Gasfree API support**: `install.sh` now supports configuring `GASFREE_API_KEY` and `GASFREE_API_SECRET` for the `x402-payment` skill.
+- **New Config File**: Added `~/.x402-config.json` to store Gasfree credentials securely.
+- **Skills Branch Selection**: The installer now supports a `GITHUB_BRANCH` environment variable (defaults to `v1.4.0`) for skills installation.
+
+### Changed
+- **Default Skills Version**: Updated default skills branch to `v1.4.0` for improved compatibility.
+- **Enhanced README**: Added dedicated section for Gasfree API credentials and configuration best practices.
+
+### Fixed
+- **AINFT Setup**: Resolved several issues in the AINFT merchant setup and configuration flow within `install.sh`.
+
 ## [1.0.3] - 2026-03-09
 
 ### Added

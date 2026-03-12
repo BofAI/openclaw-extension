@@ -1,41 +1,24 @@
-# Release Notes: OpenClaw Extension v1.0.3
+# Release Notes: OpenClaw Extension v1.1.0
 
-**Date**: March 9, 2026  
-**Version**: 1.0.3
+**Date**: March 12, 2026  
+**Version**: 1.1.0
 
 ## Overview
 
-This update keeps the extension documentation aligned with the current installer scope: MCP servers, skills, and the optional AINFT merchant MCP.
+This release introduces native support for gasless transactions via the Gasfree API and updates the extension to use the latest version of AI agent skills.
 
 ## Highlights
 
-### 1. AINFT Skill Simplified
+### 1. Gasfree API Integration
+The `x402-payment` skill now supports gasless transactions on the TRON network. The installer (`install.sh`) has been enhanced to:
+- Prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` during setup.
+- Securely store credentials in `~/.x402-config.json` with restricted file permissions (`600`).
 
-The current `ainft-skill` is intentionally reduced to local query functions:
+### 2. Updated Skills Repository (v1.4.0)
+The extension now defaults to the `v1.4.0` branch of the [skills repository](https://github.com/BofAI/skills), ensuring compatibility with the latest protocol updates and bug fixes.
 
-- `check_balance.js`
-- `check_orders.js`
-
-The skill now:
-
-- uses production by default
-- manages the local AINFT API key
-- does not include recharge execution logic
-
-### 2. AINFT Merchant MCP Added to Installer
-
-The installer now supports an optional remote MCP entry:
-
-- server id: `ainft-merchant`
-- endpoint: `https://ainft-agent.bankofai.io/mcp`
-
-This keeps recharge tooling separate from the local AINFT query skill.
-
-### 3. Documentation Scope Tightened
-
-- Removed AINFT provider setup guidance from the extension docs
-- Kept the docs focused on what `install.sh` manages directly
-- Reduced overlap between component docs and environment-specific setup instructions
+### 3. Improved AINFT Merchant Setup
+Multiple fixes have been applied to the AINFT setup process, ensuring a smoother experience when configuring the optional `ainft-merchant` MCP server.
 
 ## Installation Summary
 
@@ -43,7 +26,6 @@ This keeps recharge tooling separate from the local AINFT query skill.
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-## Notes
-
-- `install.sh` covers the OpenClaw Extension install flow for MCP servers and skills
-- The local AINFT skill and the remote AINFT merchant MCP are separate components by design
+## Configuration Notes
+- If you have already installed the `x402-payment` skill, you can re-run the installer to configure Gasfree credentials.
+- The `v1.4.0` skills branch is now required for full feature support.
