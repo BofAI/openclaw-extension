@@ -1,73 +1,74 @@
 # OpenClaw Extension
 
-OpenClaw Extension is a suite of tools developed by **BankofAI** to empower AI Agents with financial sovereignty. It enables agents to hold wallets, execute transactions, and monetize services using the **x402 Protocol** (HTTP 402 Payment Required).
+OpenClaw Extension is a BankOfAI toolkit for connecting AI agents to MCP servers and reusable skills.  
+It does not replace the AI agent itself. Instead, it installs and wires the components that let platforms such as OpenClaw, ClawdCode, OpenCode, and other MCP-compatible agents gain:
 
-## 🚀 Mission
+- blockchain interaction
+- reusable skill workflows
+- x402 payment support
+- AINFT query and recharge capabilities
 
-To build the "Central Bank" for the agent economy, ensuring every AI agent can:
-- **Earn**: Accept payments for tasks and services via standard protocols.
-- **Spend**: Pay for resources (computation, data, storage) autonomously.
-- **Connect**: Facilitate direct Agent-to-Agent (A2A) financial activities and settlements.
-- **Transact**: Interact with DeFi and smart contracts seamlessly.
+## Overview
 
-## 📦 Core Components
+OpenClaw Extension has two main jobs:
 
-This extension provides two main components:
+1. install and configure common MCP servers
+2. install and connect the skills repository
 
-### 1. MCP Servers
+After setup, an AI agent can go beyond plain conversation and use:
 
-Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
+- blockchain tools
+- predefined workflows
+- paid agent endpoints via x402
+- AINFT-related query and recharge flows
 
-- **[mcp-server-tron](https://github.com/bankofai/mcp-server-tron)** - TRON blockchain interaction
-  - Balance checks, transfers, smart contract calls
-  - Resource estimation (Energy/Bandwidth)
-  - Multi-network support (Mainnet, Nile, Shasta)
+## How It Works
 
-- **[bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp)** - BNB Chain official MCP server
-  - Multi-chain support: BSC, opBNB, Ethereum, Greenfield
-  - Wallet operations, smart contracts, token transfers
-  - Cross-chain capabilities
+The model is straightforward:
 
-- **AINFT merchant MCP** - Remote AINFT recharge MCP
-  - Default remote endpoint: `https://ainft-agent.bankofai.io/mcp`
-  - Exposed through `mcporter` as `ainft-merchant`
-  - Intended for AINFT recharge flows
+1. the AI agent understands the user request
+2. MCP servers provide executable tools
+3. skills provide task instructions and workflow rules
+4. OpenClaw Extension installs and connects these parts in the local environment
 
-### 2. Skills
+In short:
 
-Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
+- a `Skill` is the instruction layer
+- an `MCP Server` is the tool layer
+- `OpenClaw Extension` is the installer and integration layer
 
-The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
+## How To Use Skills
 
-**Available Skills:**
-- **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
-- **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
-- **x402-payment-demo** - Demo of x402 payment protocol
-- **ainft-skill** - Local AINFT balance and order queries
+Skills can be used with OpenClaw, ClawdCode, OpenCode, and other AI agents that support MCP (Model Context Protocol).  
+This document uses OpenClaw as the primary example.
 
-For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
+Before starting, make sure you have:
 
-## 🛠 Installation
+- installed OpenClaw
+- installed or downloaded OpenClaw Extension
+- completed the base MCP server configuration
 
-### Prerequisites
-- **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
-- **Node.js** (v18+)
-- **Python 3** (for configuration helpers)
-- **Git** (for cloning skills repository)
-- **TRON Wallet** (Private Key & API Key for TRON network interaction)
+## Compatible Platforms
 
-**Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
+Skills work with MCP-compatible AI agent platforms, including:
 
-### Quick Start
+- `OpenClaw`
+- `ClawdCode`
+- `OpenCode`
+- other AI agents that support MCP
 
-**One-command installation:**
+## Quick Installation Example
+
+Using OpenClaw, the minimal flow is:
+
+1. install OpenClaw
+2. install OpenClaw Extension
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-Or from source:
+If you prefer to run from source:
 
 ```bash
 git clone https://github.com/BofAI/openclaw-extension.git
@@ -75,64 +76,154 @@ cd openclaw-extension
 ./install.sh
 ```
 
-### What Gets Installed
+## Included Components
 
-- ✅ **MCP servers** - TRON, BSC, and optional AINFT merchant MCP entries configured in `~/.mcporter/mcporter.json`
-- ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
+### MCP Servers
 
-**Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
+- [`mcp-server-tron`](https://github.com/bankofai/mcp-server-tron)
+  - TRON chain queries, transfers, and contract calls
+  - supports Mainnet / Nile / Shasta
+- [`bnbchain-mcp`](https://github.com/bnb-chain/bnbchain-mcp)
+  - BSC / opBNB / Ethereum / Greenfield and related networks
+- `ainft-merchant`
+  - remote MCP endpoint: `https://ainft-agent.bankofai.io/mcp`
+  - used for AINFT recharge flows
 
-## 🔐 Security
+### Skills
 
-### Credential Storage Options
+The installer pulls the skills repository from `https://github.com/BofAI/skills`.  
+The default skills branch can be controlled with `GITHUB_BRANCH`, and currently defaults to `v1.4.0`.
 
-The installer offers two methods for storing blockchain credentials:
+Common skills include:
 
-**Option 1: Config File Storage**
-- Keys stored in `~/.mcporter/mcporter.json`
-- Convenient but less secure (plaintext)
-- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
-- Never share or commit this file to version control
+- `sunswap`
+- `8004-skill`
+- `x402-payment`
+- `x402-payment-demo`
+- `ainft-skill`
 
-**Option 2: Environment Variables (Recommended)**
-- Keys read from shell environment
-- More secure, not stored in config files
-- Add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.):
-  ```bash
-  # For TRON
-  export TRON_PRIVATE_KEY="your_private_key_here"
-  export TRONGRID_API_KEY="your_api_key_here"
-  
-  # For BSC/EVM chains
-  export PRIVATE_KEY="0x_your_private_key_here"
-  ```
-- Restart your shell or run `source ~/.zshrc` after adding
+## How To Use A Skill
 
-**Option 3: Gasfree API Credentials (for x402-payment)**
-- Used for gasless transactions on TRON via the Gasfree service
-- Stored in `~/.x402-config.json`
-- The installer will prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` when installing the x402-payment skill
-- Secure the file with `chmod 600 ~/.x402-config.json`
-- Manual configuration:
-  ```json
-  {
-    "gasfree_api_key": "YOUR_KEY",
-    "gasfree_api_secret": "YOUR_SECRET"
-  }
-  ```
+You do not need to write complex code. In most cases, you just ask the AI agent in natural language.
 
-### Best Practices
+### Option 1: Explicit Invocation
 
-- Use dedicated agent wallets with limited funds
-- Never use your main personal wallet
-- Test on testnets (Nile for TRON, BSC Testnet for BSC) before using mainnet
-- Do not allow AI agents to scan files containing private keys
+If you already know which skill you want, tell the AI agent to read the exact `SKILL.md`.
 
-## Use at your own risk
+Example:
 
-Allowing AI agents to handle private keys directly involves substantial security risks. We advise using only small amounts of cryptocurrency and exercising caution. Despite the built-in safeguards, there is no guarantee that your assets are immune to loss. This extension is currently in an experimental stage and has not been subjected to rigorous testing. It is provided without any warranty or assumption of liability. Always validate your setup on testnets (Nile for TRON, BSC Testnet for BSC) before interacting with mainnets.
+```text
+Please read skills/sunswap/SKILL.md and help me check how much TRX I can get for 100 USDT.
+```
 
-## 🤝 Contributing
+### Option 2: Implicit Trigger
 
-We welcome contributions! Please see the [OpenClaw](https://github.com/openclaw) organization for more details on the underlying technologies.
+If the skill is already installed, you can simply describe the task and let the AI agent pick the right skill.
+
+Example:
+
+```text
+Help me check how much TRX 100 USDT can get on SunSwap right now.
+```
+
+## What The Installer Configures
+
+`install.sh` mainly handles two areas:
+
+1. MCP server configuration
+2. skills repository cloning and installation
+
+Typical results after installation:
+
+- MCP server entries written to `~/.mcporter/mcporter.json`
+- local skills directory created or updated
+- optional remote `ainft-merchant` MCP configuration
+- optional Gasfree credentials for `x402-payment`
+
+## Security Notes
+
+The installer currently supports three common credential patterns.
+
+### Option 1: `mcporter` Configuration File
+
+- stored in `~/.mcporter/mcporter.json`
+- convenient for MCP server credentials
+- local plaintext storage, so file permissions matter
+
+Recommended:
+
+```bash
+chmod 600 ~/.mcporter/mcporter.json
+```
+
+### Option 2: Environment Variables
+
+Environment variables are the recommended way to keep private keys and API keys out of configuration files.
+
+Example:
+
+```bash
+# TRON
+export TRON_PRIVATE_KEY="your_private_key_here"
+export TRONGRID_API_KEY="your_api_key_here"
+
+# BSC / EVM
+export PRIVATE_KEY="0x_your_private_key_here"
+```
+
+### Option 3: Gasfree API Credentials
+
+`x402-payment` now supports gasless transactions on TRON through the Gasfree API.
+
+- stored in `~/.x402-config.json`
+- the installer can prompt for:
+  - `GASFREE_API_KEY`
+  - `GASFREE_API_SECRET`
+
+Recommended:
+
+```bash
+chmod 600 ~/.x402-config.json
+```
+
+Best practices:
+
+- use dedicated agent wallets
+- do not use your personal main wallet
+- validate on testnets before mainnet use
+- do not let AI agents read directories that contain private keys or API secrets
+
+## AINFT Notes
+
+AINFT support is intentionally split into two parts:
+
+- `ainft-skill`
+  - local query capability
+  - used for balance and order reads
+- `ainft-merchant`
+  - remote MCP capability
+  - used for recharge-related flows
+
+These should remain separate. The local query skill and the remote merchant MCP solve different problems.
+
+## Using Other AI Agent Platforms
+
+If you are using ClawdCode, OpenCode, or another MCP-compatible platform:
+
+1. install your AI agent
+2. configure MCP servers manually according to that platform
+3. clone the skills repository locally
+
+```bash
+git clone https://github.com/BofAI/skills.git
+```
+
+4. point the AI agent to the skills directory, or explicitly reference the needed `SKILL.md`
+
+## Release Information
+
+- release notes: [RELEASE_NOTE.md](RELEASE_NOTE.md)
+- changelog: [CHANGELOG.md](CHANGELOG.md)
+- security policy: [SECURITY.md](SECURITY.md)
+- contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- license: [LICENSE](LICENSE)
