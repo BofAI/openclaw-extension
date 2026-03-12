@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="dev/gasfree"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.0}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -308,7 +308,7 @@ multiselect() {
 # --- Skills Installation Functions ---
 
 clone_skills_repo() {
-    echo -e "${INFO}Cloning skills repository...${NC}"
+    echo -e "${INFO}Cloning skills repository ($GITHUB_BRANCH)...${NC}"
     TEMP_DIR=$(mktemp -d)
     
     if ! git clone --depth 1 -b "$GITHUB_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
