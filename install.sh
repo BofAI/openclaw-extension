@@ -884,7 +884,7 @@ setup_agent_wallet() {
     echo -e "${MUTED}  export TRON_AGENT_WALLET_NAME=\"<your-tron-wallet-name>\"${NC}"
     echo -e "${MUTED}  export AGENT_WALLET_PASSWORD=\"<your-master-password>\"${NC}"
     echo -e "${MUTED}  # export EVM_AGENT_WALLET_NAME=\"<your-evm-wallet-name>\"   # optional${NC}"
-    echo -e "${MUTED}  # export AGENT_WALLET_SECRETS_DIR=\"~/.agent-wallet\"        # optional, default${NC}"
+    echo -e "${MUTED}  # export AGENT_WALLET_DIR=\"~/.agent-wallet\"                # optional, default${NC}"
     echo ""
     echo ""
     echo -e "${INFO}The x402-payment skill automatically selects the best available wallet source.${NC}"
