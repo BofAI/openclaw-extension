@@ -33,11 +33,16 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Exposed through `mcporter` as `ainft-merchant`
   - Intended for AINFT recharge flows
 
+- **x402-mcp** - Local MCP wrapper around the x402 CLI
+  - Uses a local `x402` checkout for now
+  - Exposes `x402_status`, `x402_balance`, and `x402_pay`
+  - Intended as the MCP alternative to the `x402-payment` skill
+
 ### 2. Skills
 
-Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
+Pre-built workflows and tools from the published **skills repository**:
 
-The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
+The installer clones [BofAI/skills](https://github.com/BofAI/skills) and installs skills from that remote repository.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
@@ -46,7 +51,9 @@ The installer clones the [skills repository](https://github.com/BofAI/skills) an
 - **x402-payment-demo** - Demo of x402 payment protocol
 - **ainft-skill** - Local AINFT balance and order queries
 
-For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
+`x402-mcp` and the `x402-payment` / `x402-payment-demo` skills are intentionally mutually exclusive. Install one path or the other.
+
+For complete documentation and usage instructions, see the [x402 repository](https://github.com/BofAI/x402).
 
 ## 🛠 Installation
 
@@ -54,7 +61,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
-- **Git** (for cloning skills repository)
+- **Git** (for cloning the x402 repository when needed)
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
@@ -77,9 +84,9 @@ cd openclaw-extension
 
 ### What Gets Installed
 
-- ✅ **MCP servers** - TRON, BSC, and optional AINFT merchant MCP entries configured in `~/.mcporter/mcporter.json`
+- ✅ **MCP servers** - TRON, BSC, optional AINFT merchant, and optional local `x402-mcp` entries configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), local `x402-mcp`, and [BofAI/skills](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 

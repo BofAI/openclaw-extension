@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # OpenClaw Extension Installer (by BankofAI)
-# Installs MCP server and TRON skills from GitHub
+# Installs MCP server and skills for OpenClaw
 
 # --- Colors & Styling ---
 BOLD='\033[1m'
@@ -28,11 +28,17 @@ MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
-GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.0}"
+SKILLS_REPO_URL="${SKILLS_REPO_URL:-https://github.com/BofAI/skills.git}"
+SKILLS_REPO_BRANCH="${SKILLS_REPO_BRANCH:-v1.4.0}"
+SKILLS_SOURCE_DIR=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCAL_X402_REPO="${LOCAL_X402_REPO:-$SCRIPT_DIR/../x402}"
+LOCAL_X402_MCP_BIN="$LOCAL_X402_REPO/typescript/packages/mcp/bin/x402-mcp.js"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
+INSTALLED_MCP_SERVERS=()
+X402_MCP_SELECTED=false
 
 # --- Cleanup ---
 cleanup() {
@@ -184,6 +190,58 @@ EOF
     $PYTHON_CMD "$py_script"
 }
 
+remove_server_config() {
+    local server="$1"
+    local config_file="$2"
+
+    local py_script
+    py_script=$(mktempfile)
+
+    cat <<EOF > "$py_script"
+import json
+import os
+
+file_path = '$config_file'
+server_name = '$server'
+
+if not os.path.exists(file_path):
+    raise SystemExit(0)
+
+with open(file_path, 'r') as f:
+    content = f.read().strip()
+
+if not content:
+    raise SystemExit(0)
+
+data = json.loads(content)
+servers = data.get('mcpServers', {})
+if server_name in servers:
+    del servers[server_name]
+
+with open(file_path, 'w') as f:
+    json.dump(data, f, indent=2)
+EOF
+    $PYTHON_CMD "$py_script"
+}
+
+remove_installed_skill_if_present() {
+    local base_dir="$1"
+    local skill_id="$2"
+
+    if [ -d "$base_dir/$skill_id" ]; then
+        rm -rf "$base_dir/$skill_id"
+        echo -e "${MUTED}  Removed existing $skill_id from $base_dir${NC}"
+    fi
+}
+
+disable_x402_skills() {
+    echo -e "${WARN}x402-mcp and x402-payment skills are mutually exclusive. Removing installed x402 skills...${NC}"
+    remove_installed_skill_if_present "$OPENCLAW_USER_SKILLS" "x402-payment"
+    remove_installed_skill_if_present "$OPENCLAW_USER_SKILLS" "x402-payment-demo"
+    remove_installed_skill_if_present "$OPENCLAW_WORKSPACE_SKILLS" "x402-payment"
+    remove_installed_skill_if_present "$OPENCLAW_WORKSPACE_SKILLS" "x402-payment-demo"
+}
+
 ask_input() {
     local prompt="$1"
     local var_name="$2"
@@ -308,14 +366,20 @@ multiselect() {
 # --- Skills Installation Functions ---
 
 clone_skills_repo() {
-    echo -e "${INFO}Cloning skills repository ($GITHUB_BRANCH)...${NC}"
+    echo -e "${INFO}Cloning skills repository ($SKILLS_REPO_BRANCH)...${NC}"
     TEMP_DIR=$(mktemp -d)
-    
-    if ! git clone --depth 1 -b "$GITHUB_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
-        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
+
+    if ! git clone --depth 1 -b "$SKILLS_REPO_BRANCH" "$SKILLS_REPO_URL" "$TEMP_DIR" 2>/dev/null; then
+        echo -e "${ERROR}Error: Failed to clone repository from $SKILLS_REPO_URL${NC}"
         return 1
     fi
-    
+
+    SKILLS_SOURCE_DIR="$TEMP_DIR/skills"
+    if [ ! -d "$SKILLS_SOURCE_DIR" ]; then
+        echo -e "${ERROR}Error: Skills directory not found in cloned repository${NC}"
+        return 1
+    fi
+
     echo -e "${SUCCESS}✓ Repository cloned${NC}"
     echo ""
     return 0
@@ -463,12 +527,12 @@ copy_skill() {
     
     echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
     
-    if [ ! -d "$TEMP_DIR/$skill_id" ]; then
+    if [ ! -d "$SKILLS_SOURCE_DIR/$skill_id" ]; then
         echo -e "${ERROR}✗ Skill $skill_id not found in repository${NC}"
         return 1
     fi
     
-    if [ ! -f "$TEMP_DIR/$skill_id/SKILL.md" ]; then
+    if [ ! -f "$SKILLS_SOURCE_DIR/$skill_id/SKILL.md" ]; then
         echo -e "${ERROR}✗ $skill_id/SKILL.md not found${NC}"
         return 1
     fi
@@ -485,12 +549,26 @@ copy_skill() {
     fi
     
     mkdir -p "$target_dir"
-    cp -r "$TEMP_DIR/$skill_id" "$target_dir/"
+    cp -r "$SKILLS_SOURCE_DIR/$skill_id" "$target_dir/"
+
+    if [ -d "$target_dir/$skill_id/node_modules" ]; then
+        rm -rf "$target_dir/$skill_id/node_modules"
+    fi
     
     # Install npm dependencies if package.json exists
     if [ -f "$target_dir/$skill_id/package.json" ]; then
         echo -e "${MUTED}  Installing npm dependencies...${NC}"
-        (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
+        if ! (cd "$target_dir/$skill_id" && npm install --silent); then
+            if [ "$skill_id" = "x402-payment" ]; then
+                echo -e "${ERROR}✗ npm install failed for x402-payment${NC}"
+                return 1
+            fi
+            echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
+        fi
+    fi
+
+    if [ -f "$target_dir/$skill_id/bin/x402.js" ]; then
+        chmod +x "$target_dir/$skill_id/bin/x402.js"
     fi
     
     # Special handling for 8004-skill: configure private key
@@ -535,7 +613,7 @@ copy_skill() {
     if [ "$skill_id" = "x402-payment" ]; then
         echo ""
         echo -e "${BOLD}Gasfree API Configuration${NC}"
-        echo -e "${MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${NC}"
+        echo -e "${MUTED}x402-payment uses the current v2 CLI and optionally Gasfree API for gasless transactions on TRON${NC}"
         echo ""
 
         local x402_config="$HOME/.x402-config.json"
@@ -636,6 +714,11 @@ SERVER_IDS=(
     "bnbchain-mcp"
     "ainft-merchant"
 )
+
+if [ -f "$LOCAL_X402_MCP_BIN" ]; then
+    SERVER_OPTIONS+=("x402-mcp - Local x402 MCP server (tools: status, balance, pay)")
+    SERVER_IDS+=("x402-mcp")
+fi
 
 SELECTED_INDICES=()
 multiselect "Select MCP Servers to install:" SELECTED_INDICES "${SERVER_OPTIONS[@]}"
@@ -802,8 +885,86 @@ EOF
 
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
+            "x402-mcp")
+                 X402_MCP_SELECTED=true
+                 echo -e "${WARN}x402-mcp uses your local x402 checkout at:${NC}"
+                 echo -e "${MUTED}  $LOCAL_X402_REPO${NC}"
+                 echo ""
+                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
+                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
+                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
+                 echo ""
+
+                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
+                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
+                 echo -e "     ${MUTED}Convenient, but secrets are stored in plaintext${NC}"
+                 echo -e "  ${INFO}2)${NC} Use environment variables ${SUCCESS}[Recommended]${NC}"
+                 echo -e "     ${MUTED}More secure; x402-mcp reads from your shell environment${NC}"
+                 echo ""
+                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
+
+                 read -r cred_choice <&3
+                 cred_choice=${cred_choice:-2}
+                 echo ""
+
+                 if [ "$cred_choice" = "1" ]; then
+                     ask_input "Enter TRON_PRIVATE_KEY" X402_TRON_KEY 1 "Required for TRON x402 payments."
+                     ask_input "Enter EVM_PRIVATE_KEY" X402_EVM_KEY 1 "Optional for EVM/BSC x402 payments."
+                     ask_input "Enter TRON_GRID_API_KEY" X402_TRON_GRID_KEY 0 "Optional TronGrid API key."
+                     ask_input "Enter BSC_TESTNET_RPC_URL" X402_BSC_TESTNET_RPC 0 "Optional BSC testnet RPC URL."
+                     ask_input "Enter BSC_MAINNET_RPC_URL" X402_BSC_MAINNET_RPC 0 "Optional BSC mainnet RPC URL."
+
+                     X402_TRON_KEY_VAL="null"
+                     X402_EVM_KEY_VAL="null"
+                     X402_TRON_GRID_KEY_VAL="null"
+                     X402_BSC_TESTNET_RPC_VAL="null"
+                     X402_BSC_MAINNET_RPC_VAL="null"
+
+                     if [ -n "${X402_TRON_KEY:-}" ]; then X402_TRON_KEY_VAL="\"$X402_TRON_KEY\""; fi
+                     if [ -n "${X402_EVM_KEY:-}" ]; then X402_EVM_KEY_VAL="\"$X402_EVM_KEY\""; fi
+                     if [ -n "${X402_TRON_GRID_KEY:-}" ]; then X402_TRON_GRID_KEY_VAL="\"$X402_TRON_GRID_KEY\""; fi
+                     if [ -n "${X402_BSC_TESTNET_RPC:-}" ]; then X402_BSC_TESTNET_RPC_VAL="\"$X402_BSC_TESTNET_RPC\""; fi
+                     if [ -n "${X402_BSC_MAINNET_RPC:-}" ]; then X402_BSC_MAINNET_RPC_VAL="\"$X402_BSC_MAINNET_RPC\""; fi
+
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "node",
+  "args": ["$LOCAL_X402_MCP_BIN"],
+  "env": {
+    "TRON_PRIVATE_KEY": $X402_TRON_KEY_VAL,
+    "EVM_PRIVATE_KEY": $X402_EVM_KEY_VAL,
+    "TRON_GRID_API_KEY": $X402_TRON_GRID_KEY_VAL,
+    "BSC_TESTNET_RPC_URL": $X402_BSC_TESTNET_RPC_VAL,
+    "BSC_MAINNET_RPC_URL": $X402_BSC_MAINNET_RPC_VAL
+  }
+}
+EOF
+)
+                 else
+                     echo -e "${INFO}Using environment variables for credentials.${NC}"
+                     echo -e "${BOLD}Add these to your shell profile if needed:${NC}"
+                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_tron_private_key\"${NC}"
+                     echo -e "${MUTED}export EVM_PRIVATE_KEY=\"0x_your_evm_private_key\"${NC}"
+                     echo -e "${MUTED}export TRON_GRID_API_KEY=\"your_trongrid_key\"${NC}"
+                     echo -e "${MUTED}export BSC_TESTNET_RPC_URL=\"https://...\"${NC}"
+                     echo -e "${MUTED}export BSC_MAINNET_RPC_URL=\"https://...\"${NC}"
+                     echo ""
+
+                     JSON_PAYLOAD=$(cat <<EOF
+{
+  "command": "node",
+  "args": ["$LOCAL_X402_MCP_BIN"]
+}
+EOF
+)
+                 fi
+
+                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 disable_x402_skills
+                 ;;
         esac
 
+        INSTALLED_MCP_SERVERS+=("$SERVER_ID")
         echo -e "${SUCCESS}✓ Configuration saved for $SERVER_ID.${NC}"
     done
 fi
@@ -821,9 +982,13 @@ else
     SKILL_OPTIONS=()
     SKILL_IDS=()
 
-    for dir in "$TEMP_DIR"/*; do
+    for dir in "$SKILLS_SOURCE_DIR"/*; do
         if [ -d "$dir" ] && [ -f "$dir/SKILL.md" ]; then
             skill_name=$(basename "$dir")
+
+            if [ "$X402_MCP_SELECTED" = true ] && { [ "$skill_name" = "x402-payment" ] || [ "$skill_name" = "x402-payment-demo" ]; }; then
+                continue
+            fi
             
             # Skip installer directory
             if [ "$skill_name" = "installer" ]; then
@@ -863,6 +1028,9 @@ else
 
             for idx in "${SELECTED_SKILL_INDICES[@]}"; do
                 skill_id="${SKILL_IDS[$idx]}"
+                if [ "$skill_id" = "x402-payment" ] || [ "$skill_id" = "x402-payment-demo" ]; then
+                    remove_server_config "x402-mcp" "$MCP_CONFIG_FILE"
+                fi
                 copy_skill "$skill_id" "$TARGET_DIR"
             done
         fi
@@ -880,6 +1048,9 @@ if [ "$SKIP_MCP" = false ]; then
     echo -e "${SUCCESS}✓${NC} ${BOLD}MCP Server configured${NC}"
     echo -e "  ${INFO}Config file: ${BOLD}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}→ Secure your config: ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"
+    if [ ${#INSTALLED_MCP_SERVERS[@]} -gt 0 ]; then
+        echo -e "  ${INFO}Servers:${NC} ${INSTALLED_MCP_SERVERS[*]}"
+    fi
     echo ""
 fi
 
