@@ -31,9 +31,11 @@ OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 SKILLS_REPO_URL="${SKILLS_REPO_URL:-https://github.com/BofAI/skills.git}"
 SKILLS_REPO_BRANCH="${SKILLS_REPO_BRANCH:-v1.4.0}"
 SKILLS_SOURCE_DIR=""
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOCAL_X402_REPO="${LOCAL_X402_REPO:-$SCRIPT_DIR/../x402}"
-LOCAL_X402_MCP_BIN="$LOCAL_X402_REPO/typescript/packages/mcp/bin/x402-mcp.js"
+X402_MCP_REPO_URL="${X402_MCP_REPO_URL:-https://github.com/BofAI/x402.git}"
+X402_MCP_REPO_REF="${X402_MCP_REPO_REF:-dev/v2}"
+X402_MCP_INSTALL_DIR="${X402_MCP_INSTALL_DIR:-$HOME/.openclaw/vendor/x402-dev-v2}"
+X402_MCP_WORKSPACE_DIR="$X402_MCP_INSTALL_DIR/typescript"
+X402_MCP_BIN="$X402_MCP_WORKSPACE_DIR/packages/mcp/bin/x402-mcp.js"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -240,6 +242,55 @@ disable_x402_skills() {
     remove_installed_skill_if_present "$OPENCLAW_USER_SKILLS" "x402-payment-demo"
     remove_installed_skill_if_present "$OPENCLAW_WORKSPACE_SKILLS" "x402-payment"
     remove_installed_skill_if_present "$OPENCLAW_WORKSPACE_SKILLS" "x402-payment-demo"
+}
+
+install_x402_mcp_repo() {
+    echo -e "${INFO}Installing x402-mcp from ${X402_MCP_REPO_URL} (${X402_MCP_REPO_REF})...${NC}"
+
+    if ! command -v pnpm &> /dev/null; then
+        echo -e "${ERROR}✗ pnpm is required to install x402-mcp from source${NC}"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$X402_MCP_INSTALL_DIR")"
+
+    if [ -d "$X402_MCP_INSTALL_DIR/.git" ]; then
+        echo -e "${MUTED}  Updating existing x402 checkout...${NC}"
+        git -C "$X402_MCP_INSTALL_DIR" fetch origin "$X402_MCP_REPO_REF" >/dev/null 2>&1
+        git -C "$X402_MCP_INSTALL_DIR" checkout "$X402_MCP_REPO_REF" >/dev/null 2>&1
+        git -C "$X402_MCP_INSTALL_DIR" reset --hard "origin/$X402_MCP_REPO_REF" >/dev/null 2>&1
+    else
+        rm -rf "$X402_MCP_INSTALL_DIR"
+        if ! git clone --depth 1 -b "$X402_MCP_REPO_REF" "$X402_MCP_REPO_URL" "$X402_MCP_INSTALL_DIR" >/dev/null 2>&1; then
+            echo -e "${ERROR}✗ Failed to clone x402 repository from $X402_MCP_REPO_URL${NC}"
+            return 1
+        fi
+    fi
+
+    if [ ! -d "$X402_MCP_WORKSPACE_DIR" ]; then
+        echo -e "${ERROR}✗ Expected workspace directory not found: $X402_MCP_WORKSPACE_DIR${NC}"
+        return 1
+    fi
+
+    echo -e "${MUTED}  Installing workspace dependencies...${NC}"
+    if ! (cd "$X402_MCP_WORKSPACE_DIR" && pnpm install >/dev/null); then
+        echo -e "${ERROR}✗ pnpm install failed for x402-mcp workspace${NC}"
+        return 1
+    fi
+
+    echo -e "${MUTED}  Building x402-mcp and dependencies...${NC}"
+    if ! (cd "$X402_MCP_WORKSPACE_DIR" && pnpm --filter @bankofai/x402-mcp... build >/dev/null); then
+        echo -e "${ERROR}✗ build failed for x402-mcp workspace${NC}"
+        return 1
+    fi
+
+    if [ ! -f "$X402_MCP_BIN" ]; then
+        echo -e "${ERROR}✗ x402-mcp binary not found after install: $X402_MCP_BIN${NC}"
+        return 1
+    fi
+
+    echo -e "${SUCCESS}✓ x402-mcp installed to $X402_MCP_INSTALL_DIR${NC}"
+    return 0
 }
 
 ask_input() {
@@ -715,10 +766,8 @@ SERVER_IDS=(
     "ainft-merchant"
 )
 
-if [ -f "$LOCAL_X402_MCP_BIN" ]; then
-    SERVER_OPTIONS+=("x402-mcp - Local x402 MCP server (tools: status, balance, pay)")
-    SERVER_IDS+=("x402-mcp")
-fi
+SERVER_OPTIONS+=("x402-mcp - x402 MCP server from BofAI/x402 dev/v2 (tools: status, balance, pay)")
+SERVER_IDS+=("x402-mcp")
 
 SELECTED_INDICES=()
 multiselect "Select MCP Servers to install:" SELECTED_INDICES "${SERVER_OPTIONS[@]}"
@@ -887,8 +936,13 @@ EOF
                  ;;
             "x402-mcp")
                  X402_MCP_SELECTED=true
-                 echo -e "${WARN}x402-mcp uses your local x402 checkout at:${NC}"
-                 echo -e "${MUTED}  $LOCAL_X402_REPO${NC}"
+                 if ! install_x402_mcp_repo; then
+                     exit 1
+                 fi
+                 echo -e "${INFO}x402-mcp installed from:${NC}"
+                 echo -e "${MUTED}  $X402_MCP_REPO_URL @ $X402_MCP_REPO_REF${NC}"
+                 echo -e "${INFO}local path:${NC}"
+                 echo -e "${MUTED}  $X402_MCP_INSTALL_DIR${NC}"
                  echo ""
                  echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
                  echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
@@ -929,7 +983,7 @@ EOF
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "node",
-  "args": ["$LOCAL_X402_MCP_BIN"],
+  "args": ["$X402_MCP_BIN"],
   "env": {
     "TRON_PRIVATE_KEY": $X402_TRON_KEY_VAL,
     "EVM_PRIVATE_KEY": $X402_EVM_KEY_VAL,
@@ -953,7 +1007,7 @@ EOF
                      JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "node",
-  "args": ["$LOCAL_X402_MCP_BIN"]
+  "args": ["$X402_MCP_BIN"]
 }
 EOF
 )

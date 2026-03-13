@@ -33,8 +33,9 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Exposed through `mcporter` as `ainft-merchant`
   - Intended for AINFT recharge flows
 
-- **x402-mcp** - Local MCP wrapper around the x402 CLI
-  - Uses a local `x402` checkout for now
+- **x402-mcp** - MCP wrapper around the x402 CLI
+  - Installed from `https://github.com/BofAI/x402/tree/dev/v2`
+  - Cloned into `~/.openclaw/vendor/x402-dev-v2`
   - Exposes `x402_status`, `x402_balance`, and `x402_pay`
   - Intended as the MCP alternative to the `x402-payment` skill
 
@@ -84,9 +85,9 @@ cd openclaw-extension
 
 ### What Gets Installed
 
-- ✅ **MCP servers** - TRON, BSC, optional AINFT merchant, and optional local `x402-mcp` entries configured in `~/.mcporter/mcporter.json`
+- ✅ **MCP servers** - TRON, BSC, optional AINFT merchant, and optional `x402-mcp` entries configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), local `x402-mcp`, and [BofAI/skills](https://github.com/BofAI/skills)
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), `x402-mcp` from [BofAI/x402](https://github.com/BofAI/x402/tree/dev/v2), and [BofAI/skills](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 
