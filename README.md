@@ -34,7 +34,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Intended for AINFT recharge flows
 
 - **x402-mcp** - MCP wrapper around the x402 CLI
-  - Installed via `npx -y @bankofai/x402-mcp@2.6.0-beta.0`
+  - Installed via `npx -y @bankofai/x402-mcp@2.6.0-beta.1`
   - Exposes `x402_status`, `x402_balance`, and `x402_pay`
   - Intended as the MCP alternative to the `x402-payment` skill
 
