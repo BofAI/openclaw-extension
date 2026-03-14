@@ -42,11 +42,10 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the published **skills repository**:
 
-The installer clones [BofAI/skills](https://github.com/BofAI/skills) and installs skills from the pinned `v1.4.5` tag by default.
+The installer clones [BofAI/skills](https://github.com/BofAI/skills) and installs skills from the pinned `v1.4.8` tag by default.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
 - **x402-payment-demo** - Demo of x402 payment protocol
 - **ainft-skill** - Local AINFT balance and order queries
@@ -63,11 +62,13 @@ There are two supported x402 installation paths:
   - Installs `x402-payment` and optionally `x402-payment-demo` from the published [BofAI/skills](https://github.com/BofAI/skills) repository.
   - Best when you want OpenClaw to use the hosted demo flow directly through skills.
   - The demo skill defaults to the hosted TRON/BSC demo service at `https://tn-x402-demo.bankofai.io`.
+  - The skill installs `@bankofai/x402-mcp` as a private npm dependency inside the skill directory, but it does not require or install the `x402-mcp` MCP server.
 
 - **x402-mcp**
   - Installs the MCP wrapper via `npx -y @bankofai/x402-mcp@2.6.0-beta.9`.
   - Exposes `x402_status`, `x402_balance`, `x402_approve`, and `x402_pay` as MCP tools.
   - Best when you want direct tool-based access instead of natural-language skills.
+  - This is a separate MCP server install path, not a prerequisite for the skill path.
 
 The hosted x402 demo endpoints currently used by the skill path are:
 

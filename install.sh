@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 SKILLS_REPO_URL="${SKILLS_REPO_URL:-https://github.com/BofAI/skills.git}"
-SKILLS_REPO_BRANCH="${SKILLS_REPO_BRANCH:-v1.4.5}"
+SKILLS_REPO_BRANCH="${SKILLS_REPO_BRANCH:-v1.4.8}"
 SKILLS_SOURCE_DIR=""
 X402_MCP_PACKAGE_SPEC="${X402_MCP_PACKAGE_SPEC:-@bankofai/x402-mcp@2.6.0-beta.9}"
 TMPFILES=()
@@ -418,107 +418,6 @@ select_install_target() {
     echo ""
 }
 
-configure_8004_key() {
-    echo ""
-    echo -e "${BOLD}8004 Private Key Configuration${NC}"
-    echo -e "${MUTED}8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
-    echo ""
-    
-    # Check if key already exists
-    local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
-    local has_env_key=false
-    
-    if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
-        has_env_key=true
-    fi
-    
-    if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-        echo -e "${SUCCESS}✓ Private key already configured${NC}"
-        if [ -f "$key_file" ]; then
-            echo -e "${MUTED}  Found at: $key_file${NC}"
-        fi
-        if [ "$has_env_key" = true ]; then
-            echo -e "${MUTED}  Found in environment variable${NC}"
-        fi
-        echo ""
-        echo -ne "${INFO}?${NC} Reconfigure private key? ${MUTED}(y/N)${NC}: "
-        read -r reconfig <&3
-        if [[ ! "$reconfig" =~ ^[Yy]$ ]]; then
-            return 0
-        fi
-        echo ""
-    fi
-    
-    echo -e "${BOLD}How would you like to configure your private key?${NC}"
-    echo -e "  ${INFO}1)${NC} Save to file (${INFO}~/.clawdbot/wallets/.deployer_pk${NC}) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Persistent, shared with 8004-skill${NC}"
-    echo -e "  ${INFO}2)${NC} Set environment variable (${INFO}TRON_PRIVATE_KEY${NC})"
-    echo -e "     ${MUTED}You'll need to add to ~/.zshrc or ~/.bashrc manually${NC}"
-    echo -e "  ${INFO}3)${NC} Skip (configure later)"
-    echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
-    
-    read -r key_choice <&3
-    key_choice=${key_choice:-1}
-    
-    echo ""
-    
-    case $key_choice in
-        1)
-            echo -e "${WARN}⚠ Your private key will be saved in PLAINTEXT${NC}"
-            echo -e "${WARN}   File: $key_file${NC}"
-            echo ""
-            echo -ne "${INFO}?${NC} Enter your TRON private key ${MUTED}(64 hex characters)${NC}: "
-            read -rs private_key <&3
-            echo ""
-            
-            if [ -z "$private_key" ]; then
-                echo -e "${WARN}No private key entered, skipping configuration${NC}"
-                return 0
-            fi
-            
-            # Validate key format (basic check)
-            if [ ${#private_key} -ne 64 ]; then
-                echo -e "${WARN}⚠ Warning: Private key should be 64 characters${NC}"
-                echo -ne "${INFO}?${NC} Continue anyway? ${MUTED}(y/N)${NC}: "
-                read -r continue_anyway <&3
-                if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
-                    echo -e "${MUTED}Skipping private key configuration${NC}"
-                    return 0
-                fi
-            fi
-            
-            # Save to file
-            mkdir -p "$(dirname "$key_file")"
-            echo "$private_key" > "$key_file"
-            chmod 600 "$key_file"
-            
-            echo -e "${SUCCESS}✓ Private key saved to $key_file${NC}"
-            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
-            ;;
-            
-        2)
-            echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
-            echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-            echo ""
-            echo -e "${MUTED}Then reload your shell: source ~/.zshrc${NC}"
-            ;;
-            
-        3)
-            echo -e "${MUTED}Skipping private key configuration${NC}"
-            echo -e "${INFO}Configure later with one of these methods:${NC}"
-            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk${NC}"
-            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-            ;;
-            
-        *)
-            echo -e "${WARN}Invalid choice, skipping configuration${NC}"
-            ;;
-    esac
-    
-    echo ""
-}
-
 copy_skill() {
     local skill_id="$1"
     local target_dir="$2"
@@ -569,11 +468,6 @@ copy_skill() {
         chmod +x "$target_dir/$skill_id/bin/x402.js"
     fi
     
-    # Special handling for 8004-skill: configure private key
-    if [ "$skill_id" = "8004-skill" ]; then
-        configure_8004_key
-    fi
-    
     # Special handling for sunswap: remind about private key
     if [ "$skill_id" = "sunswap" ]; then
         echo ""
@@ -590,7 +484,7 @@ copy_skill() {
         fi
         
         if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-            echo -e "${SUCCESS}✓ Private key already configured (shared with 8004-skill)${NC}"
+            echo -e "${SUCCESS}✓ Private key already configured${NC}"
             if [ -f "$key_file" ]; then
                 echo -e "${MUTED}  Found at: $key_file${NC}"
             fi
@@ -602,7 +496,6 @@ copy_skill() {
             echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
             echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
             echo ""
-            echo -e "${INFO}Or install 8004-skill which will guide you through the setup${NC}"
         fi
         echo ""
     fi
@@ -713,7 +606,7 @@ SERVER_IDS=(
     "ainft-merchant"
 )
 
-SERVER_OPTIONS+=("x402-mcp - x402 MCP server via npm beta (tools: status, balance, pay)")
+SERVER_OPTIONS+=("x402-mcp - x402 MCP server via npm beta (tools: status, balance, approve, pay)")
 SERVER_IDS+=("x402-mcp")
 
 SELECTED_INDICES=()
@@ -986,8 +879,8 @@ else
                 continue
             fi
             
-            # Skip installer directory
-            if [ "$skill_name" = "installer" ]; then
+            # Skip installer and retired extension-only skills
+            if [ "$skill_name" = "installer" ] || [ "$skill_name" = "8004-skill" ]; then
                 continue
             fi
             
@@ -1070,9 +963,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
         case "$skill" in
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
-                ;;
-            "8004-skill")
-                echo -e "     ${MUTED}\"Read the 8004-skill and register my AI agent on TRON\"${NC}"
                 ;;
             "x402-payment")
                 echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"
