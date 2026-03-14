@@ -55,6 +55,47 @@ The installer clones [BofAI/skills](https://github.com/BofAI/skills) and install
 
 For complete documentation and usage instructions, see the [x402 repository](https://github.com/BofAI/x402).
 
+### x402 Options
+
+There are two supported x402 installation paths:
+
+- **x402 skills**
+  - Installs `x402-payment` and optionally `x402-payment-demo` from the published [BofAI/skills](https://github.com/BofAI/skills) repository.
+  - Best when you want OpenClaw to use the hosted demo flow directly through skills.
+  - The demo skill defaults to the hosted TRON/BSC demo service at `https://tn-x402-demo.bankofai.io`.
+
+- **x402-mcp**
+  - Installs the MCP wrapper via `npx -y @bankofai/x402-mcp@2.6.0-beta.4`.
+  - Exposes `x402_status`, `x402_balance`, and `x402_pay` as MCP tools.
+  - Best when you want direct tool-based access instead of natural-language skills.
+
+The hosted x402 demo endpoints currently used by the skill path are:
+
+- `https://tn-x402-demo.bankofai.io/protected-nile`
+- `https://tn-x402-demo.bankofai.io/protected-bsc-testnet`
+- `https://tn-x402-demo.bankofai.io/protected-multi`
+
+The BSC hosted demo is configured for public testnet stablecoins, not private project-only tokens:
+
+- `USDT`
+- `USDC`
+
+Minimum wallet configuration for x402:
+
+- TRON skill or MCP usage:
+  - `TRON_PRIVATE_KEY`
+  - optional `TRONGRID_API_KEY`
+- EVM/BSC usage:
+  - `PRIVATE_KEY` or `EVM_PRIVATE_KEY`
+  - optional `BSC_TESTNET_RPC_URL`
+  - optional `BSC_MAINNET_RPC_URL`
+
+Typical OpenClaw skill prompts after installation:
+
+- `demo x402-payment`
+- `demo x402-payment on bsc-testnet`
+- `pay with x402 url=https://tn-x402-demo.bankofai.io/protected-nile network=nile`
+
 ## 🛠 Installation
 
 ### Prerequisites
