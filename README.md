@@ -34,7 +34,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Intended for AINFT recharge flows
 
 - **x402-mcp** - MCP wrapper around the x402 CLI
-  - Installed via `npx -y @bankofai/x402-mcp@2.6.0-beta.7`
+  - Installed via `npx -y @bankofai/x402-mcp@2.6.0-beta.8`
   - Exposes `x402_status`, `x402_balance`, `x402_approve`, and `x402_pay`
   - Intended as the MCP alternative to the `x402-payment` skill
 
@@ -65,7 +65,7 @@ There are two supported x402 installation paths:
   - The demo skill defaults to the hosted TRON/BSC demo service at `https://tn-x402-demo.bankofai.io`.
 
 - **x402-mcp**
-  - Installs the MCP wrapper via `npx -y @bankofai/x402-mcp@2.6.0-beta.7`.
+  - Installs the MCP wrapper via `npx -y @bankofai/x402-mcp@2.6.0-beta.8`.
   - Exposes `x402_status`, `x402_balance`, `x402_approve`, and `x402_pay` as MCP tools.
   - Best when you want direct tool-based access instead of natural-language skills.
 
