@@ -372,7 +372,7 @@ clone_skills_repo() {
         return 1
     fi
 
-    SKILLS_SOURCE_DIR="$TEMP_DIR/skills"
+    SKILLS_SOURCE_DIR="$TEMP_DIR"
     if [ ! -d "$SKILLS_SOURCE_DIR" ]; then
         echo -e "${ERROR}Error: Skills directory not found in cloned repository${NC}"
         return 1
