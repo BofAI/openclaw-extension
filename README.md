@@ -38,12 +38,13 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
+By default, it installs from the pinned skills tag `v1.4.12`. You can still override this with `GITHUB_BRANCH` when needed.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
+- **tronscan-skill** - TRON blockchain data lookup via the TronScan API
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
-- **ainft-skill** - Local AINFT balance and order queries
+- **ainft-skill** - Local AINFT balance/order queries plus TRC20 top-up via remote MCP
 
 For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 

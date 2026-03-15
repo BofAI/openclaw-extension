@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.0}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.12}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -356,104 +356,85 @@ select_install_target() {
     echo ""
 }
 
-configure_8004_key() {
+configure_ainft_api_key() {
     echo ""
-    echo -e "${BOLD}8004 Private Key Configuration${NC}"
-    echo -e "${MUTED}8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
+    echo -e "${BOLD}AINFT API Key Configuration${NC}"
+    echo -e "${MUTED}ainft-skill uses your local AINFT API key for balance and order queries.${NC}"
+    echo -e "${MUTED}Top-up requests use the remote ainft-merchant MCP endpoint.${NC}"
     echo ""
-    
-    # Check if key already exists
-    local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
-    local has_env_key=false
-    
-    if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
-        has_env_key=true
+
+    local ainft_config="$HOME/.mcporter/ainft-config.json"
+    local has_key="no"
+
+    if [ -f "$ainft_config" ]; then
+        has_key=$($PYTHON_CMD -c "
+import json
+try:
+    c = json.load(open('$ainft_config'))
+    print('yes' if c.get('api_key') else 'no')
+except Exception:
+    print('no')
+" 2>/dev/null)
     fi
-    
-    if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-        echo -e "${SUCCESS}✓ Private key already configured${NC}"
-        if [ -f "$key_file" ]; then
-            echo -e "${MUTED}  Found at: $key_file${NC}"
-        fi
-        if [ "$has_env_key" = true ]; then
-            echo -e "${MUTED}  Found in environment variable${NC}"
-        fi
+
+    if [ "$has_key" = "yes" ]; then
+        echo -e "${SUCCESS}✓ AINFT API key already configured${NC}"
+        echo -e "${MUTED}  Config: $ainft_config${NC}"
         echo ""
-        echo -ne "${INFO}?${NC} Reconfigure private key? ${MUTED}(y/N)${NC}: "
-        read -r reconfig <&3
-        if [[ ! "$reconfig" =~ ^[Yy]$ ]]; then
+        echo -ne "${INFO}?${NC} Reconfigure AINFT API key? ${MUTED}(y/N)${NC}: "
+        read -r reconfig_ainft <&3
+        if [[ ! "$reconfig_ainft" =~ ^[Yy]$ ]]; then
+            echo ""
             return 0
         fi
-        echo ""
     fi
-    
-    echo -e "${BOLD}How would you like to configure your private key?${NC}"
-    echo -e "  ${INFO}1)${NC} Save to file (${INFO}~/.clawdbot/wallets/.deployer_pk${NC}) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Persistent, shared with 8004-skill${NC}"
-    echo -e "  ${INFO}2)${NC} Set environment variable (${INFO}TRON_PRIVATE_KEY${NC})"
-    echo -e "     ${MUTED}You'll need to add to ~/.zshrc or ~/.bashrc manually${NC}"
-    echo -e "  ${INFO}3)${NC} Skip (configure later)"
+
+    echo -ne "${INFO}?${NC} Enter AINFT_API_KEY ${MUTED}(optional, hidden)${NC}: "
+    read -rs ainft_api_key <&3
     echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
-    
-    read -r key_choice <&3
-    key_choice=${key_choice:-1}
-    
+
+    if [ -n "$ainft_api_key" ]; then
+        mkdir -p "$(dirname "$ainft_config")"
+        AINFT_API_KEY="$ainft_api_key" AINFT_CONFIG="$ainft_config" $PYTHON_CMD - <<'PY'
+import json
+import os
+
+config_path = os.environ["AINFT_CONFIG"]
+api_key = os.environ["AINFT_API_KEY"]
+payload = {
+    "api_key": api_key,
+    "base_url": "https://chat.ainft.com"
+}
+with open(config_path, "w") as f:
+    json.dump(payload, f, indent=2)
+PY
+        chmod 600 "$ainft_config"
+        echo -e "${SUCCESS}✓ AINFT config saved to $ainft_config${NC}"
+        echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
+    else
+        echo -e "${WARN}No AINFT API key entered, skipping local AINFT configuration${NC}"
+        echo -e "${INFO}Configure later by creating $ainft_config:${NC}"
+        echo -e "${MUTED}  {\"api_key\": \"YOUR_AINFT_API_KEY\", \"base_url\": \"https://chat.ainft.com\"}${NC}"
+    fi
+
     echo ""
-    
-    case $key_choice in
-        1)
-            echo -e "${WARN}⚠ Your private key will be saved in PLAINTEXT${NC}"
-            echo -e "${WARN}   File: $key_file${NC}"
-            echo ""
-            echo -ne "${INFO}?${NC} Enter your TRON private key ${MUTED}(64 hex characters)${NC}: "
-            read -rs private_key <&3
-            echo ""
-            
-            if [ -z "$private_key" ]; then
-                echo -e "${WARN}No private key entered, skipping configuration${NC}"
-                return 0
-            fi
-            
-            # Validate key format (basic check)
-            if [ ${#private_key} -ne 64 ]; then
-                echo -e "${WARN}⚠ Warning: Private key should be 64 characters${NC}"
-                echo -ne "${INFO}?${NC} Continue anyway? ${MUTED}(y/N)${NC}: "
-                read -r continue_anyway <&3
-                if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
-                    echo -e "${MUTED}Skipping private key configuration${NC}"
-                    return 0
-                fi
-            fi
-            
-            # Save to file
-            mkdir -p "$(dirname "$key_file")"
-            echo "$private_key" > "$key_file"
-            chmod 600 "$key_file"
-            
-            echo -e "${SUCCESS}✓ Private key saved to $key_file${NC}"
-            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
-            ;;
-            
-        2)
-            echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
-            echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-            echo ""
-            echo -e "${MUTED}Then reload your shell: source ~/.zshrc${NC}"
-            ;;
-            
-        3)
-            echo -e "${MUTED}Skipping private key configuration${NC}"
-            echo -e "${INFO}Configure later with one of these methods:${NC}"
-            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk${NC}"
-            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-            ;;
-            
-        *)
-            echo -e "${WARN}Invalid choice, skipping configuration${NC}"
-            ;;
-    esac
-    
+}
+
+configure_tronscan_api_key() {
+    echo ""
+    echo -e "${BOLD}TronScan API Key Configuration${NC}"
+    echo -e "${MUTED}tronscan-skill requires TRONSCAN_API_KEY in the shell environment.${NC}"
+    echo ""
+
+    if [ -n "${TRONSCAN_API_KEY:-}" ]; then
+        echo -e "${SUCCESS}✓ TRONSCAN_API_KEY already set in environment${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
+    echo -e "${MUTED}export TRONSCAN_API_KEY=\"your-api-key-here\"${NC}"
+    echo -e "${MUTED}Get a free key at: https://tronscan.org/#/myaccount/apiKeys${NC}"
     echo ""
 }
 
@@ -493,11 +474,6 @@ copy_skill() {
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
     fi
     
-    # Special handling for 8004-skill: configure private key
-    if [ "$skill_id" = "8004-skill" ]; then
-        configure_8004_key
-    fi
-    
     # Special handling for sunswap: remind about private key
     if [ "$skill_id" = "sunswap" ]; then
         echo ""
@@ -514,7 +490,7 @@ copy_skill() {
         fi
         
         if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-            echo -e "${SUCCESS}✓ Private key already configured (shared with 8004-skill)${NC}"
+            echo -e "${SUCCESS}✓ Private key already configured${NC}"
             if [ -f "$key_file" ]; then
                 echo -e "${MUTED}  Found at: $key_file${NC}"
             fi
@@ -525,8 +501,6 @@ copy_skill() {
             echo -e "${INFO}Configure private key using one of these methods:${NC}"
             echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
             echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-            echo ""
-            echo -e "${INFO}Or install 8004-skill which will guide you through the setup${NC}"
         fi
         echo ""
     fi
@@ -596,6 +570,14 @@ with open('$x402_config', 'w') as f:
         echo ""
     fi
 
+    if [ "$skill_id" = "ainft-skill" ]; then
+        configure_ainft_api_key
+    fi
+
+    if [ "$skill_id" = "tronscan-skill" ]; then
+        configure_tronscan_api_key
+    fi
+
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
         echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
         INSTALLED_SKILLS+=("$skill_id")
@@ -618,7 +600,7 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-npx clawhub install --force mcporter
+# npx clawhub install --force mcporter
 
 # --- Step 1: MCP Server Configuration ---
 
@@ -904,8 +886,11 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
                 ;;
-            "8004-skill")
-                echo -e "     ${MUTED}\"Read the 8004-skill and register my AI agent on TRON\"${NC}"
+            "ainft-skill")
+                echo -e "     ${MUTED}\"Read the ainft-skill and top up AINFT with 1 USDT\"${NC}"
+                ;;
+            "tronscan-skill")
+                echo -e "     ${MUTED}\"Read the tronscan-skill and look up the latest TRON block\"${NC}"
                 ;;
             "x402-payment")
                 echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"

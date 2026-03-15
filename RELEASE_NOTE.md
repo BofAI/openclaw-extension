@@ -1,24 +1,29 @@
-# Release Notes: OpenClaw Extension v1.1.0
+# Release Notes: OpenClaw Extension v1.2.14
 
-**Date**: March 12, 2026  
-**Version**: 1.1.0
+**Date**: March 15, 2026  
+**Version**: 1.2.14
 
 ## Overview
 
-This release introduces native support for gasless transactions via the Gasfree API and updates the extension to use the latest version of AI agent skills.
+This release pins the installer to a stable skills tag and aligns the extension with the current supported skill set.
 
 ## Highlights
 
-### 1. Gasfree API Integration
-The `x402-payment` skill now supports gasless transactions on the TRON network. The installer (`install.sh`) has been enhanced to:
-- Prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` during setup.
-- Securely store credentials in `~/.x402-config.json` with restricted file permissions (`600`).
+### 1. Pinned Skills Tag
+The installer now defaults to the `v1.4.12` tag of the [skills repository](https://github.com/BofAI/skills). This avoids unexpected changes from tracking the repository `main` branch and gives QA / ops a stable install target.
 
-### 2. Updated Skills Repository (v1.4.0)
-The extension now defaults to the `v1.4.0` branch of the [skills repository](https://github.com/BofAI/skills), ensuring compatibility with the latest protocol updates and bug fixes.
+### 2. Updated Supported Skills
+The installer flow and documentation now match the current supported skill set:
+- `ainft-skill`
+- `tronscan-skill`
+- `sunswap`
+- `x402-payment`
 
-### 3. Improved AINFT Merchant Setup
-Multiple fixes have been applied to the AINFT setup process, ensuring a smoother experience when configuring the optional `ainft-merchant` MCP server.
+### 3. Improved Skill Setup Prompts
+The installer now includes:
+- local `AINFT_API_KEY` setup guidance for `ainft-skill`
+- `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`
+- removal of legacy `8004-skill` prompts and references
 
 ## Installation Summary
 
@@ -27,5 +32,5 @@ curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads
 ```
 
 ## Configuration Notes
-- If you have already installed the `x402-payment` skill, you can re-run the installer to configure Gasfree credentials.
-- The `v1.4.0` skills branch is now required for full feature support.
+- You can still override the pinned skills tag by exporting `GITHUB_BRANCH` before running the installer.
+- Re-running the installer will refresh the currently supported OpenClaw skills list and prompts.
