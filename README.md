@@ -43,7 +43,6 @@ The installer clones the [skills repository](https://github.com/BofAI/skills) an
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
 - **8004-skill** - 8004 Trustless Agents (on-chain identity, reputation, and validation for AI agents on TRON & BSC)
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
-- **x402-payment-demo** - Demo of x402 payment protocol
 - **ainft-skill** - Local AINFT balance and order queries
 
 For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
