@@ -910,9 +910,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "x402-payment")
                 echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"
                 ;;
-            "x402-payment-demo")
-                echo -e "     ${MUTED}\"Read the x402-payment-demo skill and run the demo\"${NC}"
-                ;;
         esac
     done
     echo ""
