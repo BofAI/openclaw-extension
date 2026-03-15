@@ -5,15 +5,26 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.12] - 2026-03-15
+
+### Changed
+- **Pinned Skills Release**: The installer now defaults to the `v1.4.10` tag of the [skills repository](https://github.com/BofAI/skills) instead of tracking `main`.
+- **Installer Skill Set**: Updated installer prompts and documentation to match the current supported skills: `ainft-skill`, `tronscan-skill`, `sunswap`, `x402-payment`, and `x402-payment-demo`.
+
+### Fixed
+- **AINFT Skill Setup**: Added local `AINFT_API_KEY` configuration guidance for `ainft-skill`.
+- **TronScan Skill Setup**: Added `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`.
+- **Legacy Cleanup**: Removed outdated `8004-skill` references from installer prompts and docs.
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
 - **Gasfree API support**: `install.sh` now supports configuring `GASFREE_API_KEY` and `GASFREE_API_SECRET` for the `x402-payment` skill.
 - **New Config File**: Added `~/.x402-config.json` to store Gasfree credentials securely.
-- **Skills Branch Selection**: The installer now supports a `GITHUB_BRANCH` environment variable (defaults to `v1.4.0`) for skills installation.
+- **Skills Branch Selection**: The installer now supports a `GITHUB_BRANCH` environment variable for skills installation.
 
 ### Changed
-- **Default Skills Version**: Updated default skills branch to `v1.4.0` for improved compatibility.
+- **Default Skills Version**: Updated default skills branch handling for improved compatibility.
 - **Enhanced README**: Added dedicated section for Gasfree API credentials and configuration best practices.
 
 ### Fixed
@@ -49,9 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Flexible installation locations (user-level, workspace-level, custom)
 - **Available Skills**:
   - `sunswap` - SunSwap DEX trading with multi-version pool routing
-  - `8004-skill` - On-chain identity, reputation, and validation for AI agents
+  - `tronscan-skill` - TRON blockchain data lookup via the TronScan API
   - `x402-payment` - Agent payment protocol implementation
   - `x402-payment-demo` - Payment protocol demo
+  - `ainft-skill` - AINFT balance/order queries and TRC20 top-up flow
 
 ### Changed
 - **Removed clawhub dependency**: Skills are now installed directly from GitHub
