@@ -5,6 +5,12 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.13] - 2026-03-15
+
+### Changed
+- **Pinned Skills Release**: The installer now defaults to the `v1.4.11` tag of the [skills repository](https://github.com/BofAI/skills).
+- **Aligned Supported Skills**: Removed `x402-payment-demo` from the documented supported skill set to match the current skills release.
+
 ## [1.2.12] - 2026-03-15
 
 ### Changed
@@ -15,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AINFT Skill Setup**: Added local `AINFT_API_KEY` configuration guidance for `ainft-skill`.
 - **TronScan Skill Setup**: Added `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`.
 - **Legacy Cleanup**: Removed outdated `8004-skill` references from installer prompts and docs.
+
+## [1.1.1] - 2026-03-15
+
+### Removed
+- **Deprecated x402 demo references**: Removed `x402-payment-demo` references from `README.md` and `install.sh` after the demo skill was deleted from the skills repository.
 
 ## [1.1.0] - 2026-03-12
 

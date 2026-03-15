@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.10}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.11}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -894,9 +894,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
                 ;;
             "x402-payment")
                 echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"
-                ;;
-            "x402-payment-demo")
-                echo -e "     ${MUTED}\"Read the x402-payment-demo skill and run the demo\"${NC}"
                 ;;
         esac
     done
