@@ -20,10 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Pinned Skills Release**: The installer now defaults to the `v1.4.10` tag of the [skills repository](https://github.com/BofAI/skills) instead of tracking `main`.
-- **Installer Skill Set**: Updated installer prompts and documentation to match the current supported skills: `ainft-skill`, `tronscan-skill`, `sunswap`, `x402-payment`, and `x402-payment-demo`.
+- **Installer Skill Set**: Updated installer prompts and documentation to match the current supported skills: `recharge-skill`, `tronscan-skill`, `sunswap`, `x402-payment`, and `x402-payment-demo`.
 
 ### Fixed
-- **AINFT Skill Setup**: Added local `AINFT_API_KEY` configuration guidance for `ainft-skill`.
+- **recharge-skill Setup**: Added local `BANKOFAI_API_KEY` configuration guidance for `recharge-skill`.
 - **TronScan Skill Setup**: Added `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`.
 - **Legacy Cleanup**: Removed outdated `8004-skill` references from installer prompts and docs.
 
@@ -79,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `tronscan-skill` - TRON blockchain data lookup via the TronScan API
   - `x402-payment` - Agent payment protocol implementation
   - `x402-payment-demo` - Payment protocol demo
-  - `ainft-skill` - AINFT balance/order queries and TRC20 top-up flow
+  - `recharge-skill` - BANK OF AI balance/order queries and recharge flow
 
 ### Changed
 - **Removed clawhub dependency**: Skills are now installed directly from GitHub
