@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.12}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -422,7 +422,7 @@ PY
     else
         echo -e "${WARN}No BANK OF AI API key entered, skipping local BANK OF AI configuration${NC}"
         echo -e "${INFO}Configure later by creating $bankofai_config:${NC}"
-        echo -e "${MUTED}  {\"api_key\": \"YOUR_BANKOFAI_API_KEY\", \"base_url\": \"https://chat.ainft.com\"}${NC}"
+        echo -e "${MUTED}  {\"api_key\": \"YOUR_BANKOFAI_API_KEY\"}${NC}"
     fi
 
     echo ""
