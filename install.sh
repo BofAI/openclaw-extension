@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_REPO_BRANCH="feat/add_agent_wallet"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -309,11 +309,11 @@ multiselect() {
 # --- Skills Installation Functions ---
 
 clone_skills_repo() {
-    echo -e "${INFO}Cloning skills repository...${NC}"
+    echo -e "${INFO}Cloning skills repository ($GITHUB_BRANCH)...${NC}"
     TEMP_DIR=$(mktemp -d)
     
-    if ! git clone --depth 1 --branch "$GITHUB_REPO_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
-        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO (branch: $GITHUB_REPO_BRANCH)${NC}"
+    if ! git clone --depth 1 -b "$GITHUB_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
+        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
         return 1
     fi
     
@@ -357,104 +357,85 @@ select_install_target() {
     echo ""
 }
 
-configure_8004_key() {
+configure_ainft_api_key() {
     echo ""
-    echo -e "${BOLD}8004 Private Key Configuration${NC}"
-    echo -e "${MUTED}8004 scripts need a private key for write operations (register, feedback, etc.)${NC}"
+    echo -e "${BOLD}AINFT API Key Configuration${NC}"
+    echo -e "${MUTED}ainft-skill uses your local AINFT API key for balance and order queries.${NC}"
+    echo -e "${MUTED}Top-up requests use the remote ainft-merchant MCP endpoint.${NC}"
     echo ""
-    
-    # Check if key already exists
-    local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
-    local has_env_key=false
-    
-    if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
-        has_env_key=true
+
+    local ainft_config="$HOME/.mcporter/ainft-config.json"
+    local has_key="no"
+
+    if [ -f "$ainft_config" ]; then
+        has_key=$($PYTHON_CMD -c "
+import json
+try:
+    c = json.load(open('$ainft_config'))
+    print('yes' if c.get('api_key') else 'no')
+except Exception:
+    print('no')
+" 2>/dev/null)
     fi
-    
-    if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-        echo -e "${SUCCESS}✓ Private key already configured${NC}"
-        if [ -f "$key_file" ]; then
-            echo -e "${MUTED}  Found at: $key_file${NC}"
-        fi
-        if [ "$has_env_key" = true ]; then
-            echo -e "${MUTED}  Found in environment variable${NC}"
-        fi
+
+    if [ "$has_key" = "yes" ]; then
+        echo -e "${SUCCESS}✓ AINFT API key already configured${NC}"
+        echo -e "${MUTED}  Config: $ainft_config${NC}"
         echo ""
-        echo -ne "${INFO}?${NC} Reconfigure private key? ${MUTED}(y/N)${NC}: "
-        read -r reconfig <&3
-        if [[ ! "$reconfig" =~ ^[Yy]$ ]]; then
+        echo -ne "${INFO}?${NC} Reconfigure AINFT API key? ${MUTED}(y/N)${NC}: "
+        read -r reconfig_ainft <&3
+        if [[ ! "$reconfig_ainft" =~ ^[Yy]$ ]]; then
+            echo ""
             return 0
         fi
-        echo ""
     fi
-    
-    echo -e "${BOLD}How would you like to configure your private key?${NC}"
-    echo -e "  ${INFO}1)${NC} Save to file (${INFO}~/.clawdbot/wallets/.deployer_pk${NC}) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Persistent, shared with 8004-skill${NC}"
-    echo -e "  ${INFO}2)${NC} Set environment variable (${INFO}TRON_PRIVATE_KEY${NC})"
-    echo -e "     ${MUTED}You'll need to add to ~/.zshrc or ~/.bashrc manually${NC}"
-    echo -e "  ${INFO}3)${NC} Skip (configure later)"
+
+    echo -ne "${INFO}?${NC} Enter AINFT_API_KEY ${MUTED}(optional, hidden)${NC}: "
+    read -rs ainft_api_key <&3
     echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
-    
-    read -r key_choice <&3
-    key_choice=${key_choice:-1}
-    
+
+    if [ -n "$ainft_api_key" ]; then
+        mkdir -p "$(dirname "$ainft_config")"
+        AINFT_API_KEY="$ainft_api_key" AINFT_CONFIG="$ainft_config" $PYTHON_CMD - <<'PY'
+import json
+import os
+
+config_path = os.environ["AINFT_CONFIG"]
+api_key = os.environ["AINFT_API_KEY"]
+payload = {
+    "api_key": api_key,
+    "base_url": "https://chat.ainft.com"
+}
+with open(config_path, "w") as f:
+    json.dump(payload, f, indent=2)
+PY
+        chmod 600 "$ainft_config"
+        echo -e "${SUCCESS}✓ AINFT config saved to $ainft_config${NC}"
+        echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
+    else
+        echo -e "${WARN}No AINFT API key entered, skipping local AINFT configuration${NC}"
+        echo -e "${INFO}Configure later by creating $ainft_config:${NC}"
+        echo -e "${MUTED}  {\"api_key\": \"YOUR_AINFT_API_KEY\", \"base_url\": \"https://chat.ainft.com\"}${NC}"
+    fi
+
     echo ""
-    
-    case $key_choice in
-        1)
-            echo -e "${WARN}⚠ Your private key will be saved in PLAINTEXT${NC}"
-            echo -e "${WARN}   File: $key_file${NC}"
-            echo ""
-            echo -ne "${INFO}?${NC} Enter your TRON private key ${MUTED}(64 hex characters)${NC}: "
-            read -rs private_key <&3
-            echo ""
-            
-            if [ -z "$private_key" ]; then
-                echo -e "${WARN}No private key entered, skipping configuration${NC}"
-                return 0
-            fi
-            
-            # Validate key format (basic check)
-            if [ ${#private_key} -ne 64 ]; then
-                echo -e "${WARN}⚠ Warning: Private key should be 64 characters${NC}"
-                echo -ne "${INFO}?${NC} Continue anyway? ${MUTED}(y/N)${NC}: "
-                read -r continue_anyway <&3
-                if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
-                    echo -e "${MUTED}Skipping private key configuration${NC}"
-                    return 0
-                fi
-            fi
-            
-            # Save to file
-            mkdir -p "$(dirname "$key_file")"
-            echo "$private_key" > "$key_file"
-            chmod 600 "$key_file"
-            
-            echo -e "${SUCCESS}✓ Private key saved to $key_file${NC}"
-            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
-            ;;
-            
-        2)
-            echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
-            echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-            echo ""
-            echo -e "${MUTED}Then reload your shell: source ~/.zshrc${NC}"
-            ;;
-            
-        3)
-            echo -e "${MUTED}Skipping private key configuration${NC}"
-            echo -e "${INFO}Configure later with one of these methods:${NC}"
-            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk${NC}"
-            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-            ;;
-            
-        *)
-            echo -e "${WARN}Invalid choice, skipping configuration${NC}"
-            ;;
-    esac
-    
+}
+
+configure_tronscan_api_key() {
+    echo ""
+    echo -e "${BOLD}TronScan API Key Configuration${NC}"
+    echo -e "${MUTED}tronscan-skill requires TRONSCAN_API_KEY in the shell environment.${NC}"
+    echo ""
+
+    if [ -n "${TRONSCAN_API_KEY:-}" ]; then
+        echo -e "${SUCCESS}✓ TRONSCAN_API_KEY already set in environment${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -e "${INFO}Add this to your shell profile (~/.zshrc or ~/.bashrc):${NC}"
+    echo -e "${MUTED}export TRONSCAN_API_KEY=\"your-api-key-here\"${NC}"
+    echo -e "${MUTED}Get a free key at: https://tronscan.org/#/myaccount/apiKeys${NC}"
     echo ""
 }
 
@@ -499,34 +480,6 @@ copy_skill() {
         configure_8004_key
     fi
     
-    # Special handling for x402-payment: show wallet mode configuration
-    if [ "$skill_id" = "x402-payment" ]; then
-        echo ""
-        echo -e "${BOLD}x402 Payment Wallet Configuration${NC}"
-        echo ""
-        if [ "${AGENT_WALLET_SETUP}" = true ]; then
-            echo -e "${SUCCESS}✓ Agent wallet is set up — x402-payment will use it automatically.${NC}"
-            echo -e "${MUTED}  Ensure these are in your shell profile:${NC}"
-            echo -e "${MUTED}    export TRON_AGENT_WALLET_NAME=\"<your-tron-wallet-name>\"${NC}"
-            echo -e "${MUTED}    export AGENT_WALLET_PASSWORD=\"<your-master-password>\"${NC}"
-        else
-            echo -e "${MUTED}x402-payment supports two wallet modes:${NC}"
-            echo ""
-            echo -e "  ${SUCCESS}★ Mode 1: Agent Wallet${NC} ${SUCCESS}[Recommended]${NC}"
-            echo -e "    ${MUTED}Encrypted key storage — keys never exposed as plaintext.${NC}"
-            echo -e "    ${MUTED}Setup: npm install -g @bankofai/agent-wallet${NC}"
-            echo -e "    ${MUTED}       agent-wallet init && agent-wallet add${NC}"
-            echo -e "    ${MUTED}Then:  export TRON_AGENT_WALLET_NAME=\"<wallet-name>\"${NC}"
-            echo -e "    ${MUTED}       export AGENT_WALLET_PASSWORD=\"<master-password>\"${NC}"
-            echo ""
-            echo -e "  ${INFO}  Mode 2: Private Key${NC}"
-            echo -e "    ${MUTED}Set: export TRON_PRIVATE_KEY=\"<your-private-key>\"${NC}"
-        fi
-        echo ""
-        echo -e "${MUTED}  Verify config: node x402-payment/dist/x402_invoke.js --check${NC}"
-        echo ""
-    fi
-
     # Special handling for sunswap: remind about private key
     if [ "$skill_id" = "sunswap" ]; then
         echo ""
@@ -543,7 +496,7 @@ copy_skill() {
         fi
         
         if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-            echo -e "${SUCCESS}✓ Private key already configured (shared with 8004-skill)${NC}"
+            echo -e "${SUCCESS}✓ Private key already configured${NC}"
             if [ -f "$key_file" ]; then
                 echo -e "${MUTED}  Found at: $key_file${NC}"
             fi
@@ -554,12 +507,83 @@ copy_skill() {
             echo -e "${INFO}Configure private key using one of these methods:${NC}"
             echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
             echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-            echo ""
-            echo -e "${INFO}Or install 8004-skill which will guide you through the setup${NC}"
         fi
         echo ""
     fi
-    
+
+    # Special handling for x402-payment: configure gasfree API credentials
+    if [ "$skill_id" = "x402-payment" ]; then
+        echo ""
+        echo -e "${BOLD}Gasfree API Configuration${NC}"
+        echo -e "${MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${NC}"
+        echo ""
+
+        local x402_config="$HOME/.x402-config.json"
+
+        # Check if config already exists with valid keys
+        if [ -f "$x402_config" ]; then
+            local has_keys
+            has_keys=$($PYTHON_CMD -c "
+import json, sys
+try:
+    c = json.load(open('$x402_config'))
+    if c.get('gasfree_api_key') and c.get('gasfree_api_secret'):
+        print('yes')
+    else:
+        print('no')
+except Exception:
+    print('no')
+" 2>/dev/null)
+
+            if [ "$has_keys" = "yes" ]; then
+                echo -e "${SUCCESS}✓ Gasfree API credentials already configured${NC}"
+                echo -e "${MUTED}  Config: $x402_config${NC}"
+                echo ""
+                echo -ne "${INFO}?${NC} Reconfigure Gasfree API credentials? ${MUTED}(y/N)${NC}: "
+                read -r reconfig_gasfree <&3
+                if [[ ! "$reconfig_gasfree" =~ ^[Yy]$ ]]; then
+                    echo ""
+                fi
+            fi
+        fi
+
+        # Prompt for credentials if not yet configured or user wants to reconfigure
+        if [ ! -f "$x402_config" ] || [ "${has_keys:-no}" != "yes" ] || [[ "${reconfig_gasfree:-N}" =~ ^[Yy]$ ]]; then
+            echo -ne "${INFO}?${NC} Enter GASFREE_API_KEY ${MUTED}(optional)${NC}: "
+            read -r gasfree_api_key <&3
+
+            echo -ne "${INFO}?${NC} Enter GASFREE_API_SECRET ${MUTED}(optional, hidden)${NC}: "
+            read -rs gasfree_api_secret <&3
+            echo ""
+
+            if [ -n "$gasfree_api_key" ] && [ -n "$gasfree_api_secret" ]; then
+                $PYTHON_CMD -c "
+import json
+config = {'gasfree_api_key': '$gasfree_api_key', 'gasfree_api_secret': '$gasfree_api_secret'}
+with open('$x402_config', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+                chmod 600 "$x402_config"
+                echo -e "${SUCCESS}✓ Gasfree API credentials saved to $x402_config${NC}"
+                echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
+            else
+                echo -e "${WARN}Incomplete credentials, skipping Gasfree configuration${NC}"
+                echo -e "${INFO}Configure later by creating $x402_config:${NC}"
+                echo -e "${MUTED}  {\"gasfree_api_key\": \"YOUR_KEY\", \"gasfree_api_secret\": \"YOUR_SECRET\"}${NC}"
+            fi
+        fi
+
+        echo ""
+    fi
+
+    if [ "$skill_id" = "ainft-skill" ]; then
+        configure_ainft_api_key
+    fi
+
+    if [ "$skill_id" = "tronscan-skill" ]; then
+        configure_tronscan_api_key
+    fi
+
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
         echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
         INSTALLED_SKILLS+=("$skill_id")
@@ -570,182 +594,14 @@ copy_skill() {
     fi
 }
 
-install_security_guidelines() {
-    local workspace_dir="$HOME/.openclaw/workspace"
-    local web3_workspace="$HOME/.openclaw/workspace-web3"
-    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local workspace_template_dir="$script_dir/workspace"
-    
-    # Check if workspace template exists
-    if [ ! -d "$workspace_template_dir" ]; then
-        echo -e "${WARN}⚠ workspace template not found, skipping workspace setup${NC}"
-        return 0
-    fi
-    
-    echo -e "${BOLD}OpenClaw Workspace Setup${NC}"
-    echo ""
-    
-    # Check if workspace already exists
-    if [ -d "$workspace_dir" ] && [ "$(ls -A $workspace_dir 2>/dev/null)" ]; then
-        echo -e "${WARN}⚠ Workspace already exists: $workspace_dir${NC}"
-        echo ""
-        echo -e "Choose an option:"
-        echo -e "  ${INFO}1)${NC} Create new Web3 workspace ${SUCCESS}[Recommended]${NC}"
-        echo -e "     ${MUTED}Install to ~/.openclaw/workspace-web3 (keeps your current workspace)${NC}"
-        echo -e "     ${MUTED}Auto-switch to new workspace${NC}"
-        echo -e "  ${INFO}2)${NC} Overwrite existing workspace"
-        echo -e "     ${MUTED}Replace all files in ~/.openclaw/workspace with Web3-enhanced versions${NC}"
-        echo ""
-        echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
-        
-        read -r workspace_choice <&3
-        workspace_choice=${workspace_choice:-1}
-        
-        case $workspace_choice in
-            1)
-                # Create new Web3 workspace (default)
-                echo ""
-                echo -e "${INFO}Creating new Web3 workspace...${NC}"
-                
-                if [ -d "$web3_workspace" ] && [ "$(ls -A $web3_workspace 2>/dev/null)" ]; then
-                    echo -e "${WARN}⚠ Web3 workspace already exists: $web3_workspace${NC}"
-                    echo -ne "${INFO}?${NC} Overwrite? ${MUTED}(y/N)${NC}: "
-                    read -r confirm <&3
-                    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-                        echo -e "${MUTED}  Cancelled${NC}"
-                        return 0
-                    fi
-                fi
-                
-                # Create Web3 workspace directory
-                mkdir -p "$web3_workspace"
-                
-                # Copy all template files
-                cp -f "$workspace_template_dir"/* "$web3_workspace/"
-                
-                echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-                echo -e "${MUTED}  Location: $web3_workspace${NC}"
-                echo ""
-                
-                # Auto-switch to new workspace
-                echo -e "${INFO}Switching to new workspace...${NC}"
-                if openclaw config set agents.defaults.workspace "$web3_workspace" 2>/dev/null; then
-                    echo -e "${SUCCESS}✓ Workspace switched successfully${NC}"
-                    echo -e "${MUTED}  Active workspace: $web3_workspace${NC}"
-                    echo ""
-                    echo -e "${INFO}Restarting OpenClaw gateway...${NC}"
-                    if openclaw gateway restart 2>/dev/null; then
-                        echo -e "${SUCCESS}✓ Gateway restarted${NC}"
-                    else
-                        echo -e "${WARN}⚠ Gateway restart failed. Restart manually:${NC}"
-                        echo -e "${MUTED}  openclaw gateway restart${NC}"
-                    fi
-                else
-                    echo -e "${WARN}⚠ Auto-switch failed. Switch manually:${NC}"
-                    echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-                    echo -e "${MUTED}  openclaw gateway restart${NC}"
-                fi
-                echo ""
-                echo -e "${INFO}To switch back to your original workspace:${NC}"
-                echo -e "${MUTED}  openclaw config set agents.defaults.workspace $workspace_dir${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-                
-                workspace_dir="$web3_workspace"
-                ;;
-            2)
-                # Overwrite existing workspace
-                echo ""
-                echo -e "${WARN}⚠ This will overwrite ALL files in your workspace${NC}"
-                echo -ne "${INFO}?${NC} Are you sure? ${MUTED}(y/N)${NC}: "
-                read -r confirm <&3
-                if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-                    echo -e "${MUTED}  Cancelled${NC}"
-                    return 0
-                fi
-                
-                # Overwrite all files
-                cp -f "$workspace_template_dir"/* "$workspace_dir/"
-                
-                echo -e "${SUCCESS}✓ Workspace overwritten${NC}"
-                echo -e "${MUTED}  Location: $workspace_dir${NC}"
-                ;;
-            *)
-                echo -e "${WARN}Invalid choice, using default (create new workspace)${NC}"
-                
-                # Default: create new workspace
-                mkdir -p "$web3_workspace"
-                cp -f "$workspace_template_dir"/* "$web3_workspace/"
-                
-                echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-                echo -e "${MUTED}  Location: $web3_workspace${NC}"
-                echo ""
-                echo -e "${INFO}Switch to this workspace:${NC}"
-                echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-                
-                workspace_dir="$web3_workspace"
-                ;;
-        esac
-    else
-        # No existing workspace - create new Web3 workspace
-        echo -e "${INFO}No existing workspace found. Creating new Web3 workspace...${NC}"
-        echo ""
-        
-        # Create Web3 workspace directory
-        mkdir -p "$web3_workspace"
-        
-        # Copy all template files
-        cp -f "$workspace_template_dir"/* "$web3_workspace/"
-        
-        echo -e "${SUCCESS}✓ New Web3 workspace created${NC}"
-        echo -e "${MUTED}  Location: $web3_workspace${NC}"
-        echo ""
-        
-        # Auto-switch to new workspace
-        echo -e "${INFO}Setting as default workspace...${NC}"
-        if openclaw config set agents.defaults.workspace "$web3_workspace" 2>/dev/null; then
-            echo -e "${SUCCESS}✓ Workspace configured successfully${NC}"
-            echo -e "${MUTED}  Active workspace: $web3_workspace${NC}"
-            echo ""
-            echo -e "${INFO}Restarting OpenClaw gateway...${NC}"
-            if openclaw gateway restart 2>/dev/null; then
-                echo -e "${SUCCESS}✓ Gateway restarted${NC}"
-            else
-                echo -e "${WARN}⚠ Gateway restart failed. Restart manually:${NC}"
-                echo -e "${MUTED}  openclaw gateway restart${NC}"
-            fi
-        else
-            echo -e "${WARN}⚠ Auto-config failed. Configure manually:${NC}"
-            echo -e "${MUTED}  openclaw config set agents.defaults.workspace $web3_workspace${NC}"
-            echo -e "${MUTED}  openclaw gateway restart${NC}"
-        fi
-        
-        workspace_dir="$web3_workspace"
-    fi
-    
-    # Show installed files
-    echo ""
-    echo -e "${MUTED}  Files installed:${NC}"
-    echo -e "${MUTED}    • AGENTS.md (Web3-enhanced)${NC}"
-    echo -e "${MUTED}    • BOOTSTRAP.md (first-run setup)${NC}"
-    echo -e "${MUTED}    • SOUL.md, USER.md, IDENTITY.md${NC}"
-    echo -e "${MUTED}    • TOOLS.md (Web3-enhanced)${NC}"
-    echo -e "${MUTED}    • HEARTBEAT.md${NC}"
-    echo ""
-    echo -e "${INFO}OpenClaw will automatically load these files in new sessions${NC}"
-    
-    if [ -f "$workspace_dir/BOOTSTRAP.md" ]; then
-        echo -e "${INFO}Next: Start OpenClaw and follow BOOTSTRAP.md to set up your identity${NC}"
-    fi
-}
-
 # --- Agent Wallet Setup ---
 
 setup_agent_wallet() {
     echo ""
-    echo -e "${BOLD}Step 3: Agent Wallet Setup${NC}"
+    echo -e "${BOLD}Step 2: Agent Wallet Setup${NC}"
     echo -e "${MUTED}Encrypt and manage private keys with ${BOLD}@bankofai/agent-wallet${NC}${MUTED}.${NC}"
-    echo -e "${MUTED}More secure than raw private keys — keys are encrypted at rest with a master password.${NC}"
+    echo -e "${MUTED}Supports both local wallet mode and single-wallet private key mode.${NC}"
+    echo -e "${MUTED}Local wallet mode is more secure because keys are encrypted at rest with a master password.${NC}"
     echo ""
 
     # Check if agent-wallet CLI is installed
@@ -768,7 +624,7 @@ setup_agent_wallet() {
             else
                 echo -e "${ERROR}✗ Installation failed.${NC}"
                 echo -e "${INFO}Install manually and re-run: ${BOLD}npm install -g @bankofai/agent-wallet${NC}"
-                echo -e "${INFO}Then run: ${BOLD}agent-wallet init${NC}"
+                echo -e "${INFO}Then run: ${BOLD}agent-wallet start${NC} ${MUTED}or${NC} ${BOLD}agent-wallet init${NC}"
                 echo ""
                 return 0
             fi
@@ -777,8 +633,9 @@ setup_agent_wallet() {
             echo ""
             echo -e "${BOLD}To set up later:${NC}"
             echo -e "${MUTED}  npm install -g @bankofai/agent-wallet${NC}"
+            echo -e "${MUTED}  agent-wallet start   # quick setup for a local wallet${NC}"
             echo -e "${MUTED}  agent-wallet init${NC}"
-            echo -e "${MUTED}  agent-wallet add   # add a tron_local or evm_local wallet${NC}"
+            echo -e "${MUTED}  agent-wallet add     # add a tron_local or evm_local wallet${NC}"
             echo ""
             return 0
         fi
@@ -880,15 +737,20 @@ setup_agent_wallet() {
     echo -e "${BOLD}Configure environment variables for x402-payment skill${NC}"
     echo -e "${MUTED}Add these to your shell profile (${INFO}~/.zshrc${MUTED} or ${INFO}~/.bashrc${MUTED}):${NC}"
     echo ""
-    echo -e "${MUTED}  # Agent Wallet (x402-payment — preferred over raw private key)${NC}"
+    echo -e "${MUTED}  # Local wallet mode (preferred over raw private key)${NC}"
     echo -e "${MUTED}  export TRON_AGENT_WALLET_NAME=\"<your-tron-wallet-name>\"${NC}"
     echo -e "${MUTED}  export AGENT_WALLET_PASSWORD=\"<your-master-password>\"${NC}"
     echo -e "${MUTED}  # export EVM_AGENT_WALLET_NAME=\"<your-evm-wallet-name>\"   # optional${NC}"
     echo -e "${MUTED}  # export AGENT_WALLET_DIR=\"~/.agent-wallet\"                # optional, default${NC}"
     echo ""
+    echo -e "${MUTED}  # Private key mode (single wallet, optional alternative)${NC}"
+    echo -e "${MUTED}  # export AGENT_WALLET_PRIVATE_KEY=\"<your-private-key>\"${NC}"
+    echo -e "${MUTED}  # export AGENT_WALLET_MNEMONIC=\"word1 word2 ...\"           # alternative to private key${NC}"
+    echo -e "${MUTED}  # export AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX=\"0\"            # optional, mnemonic only${NC}"
+    echo ""
     echo ""
     echo -e "${INFO}The x402-payment skill automatically selects the best available wallet source.${NC}"
-    echo -e "${MUTED}If agent wallet is configured, it will be preferred over raw private keys.${NC}"
+    echo -e "${MUTED}If AGENT_WALLET_PASSWORD is set, local wallet mode is preferred over private key or mnemonic mode.${NC}"
     echo -e "${MUTED}Reload your shell: ${INFO}source ~/.zshrc${NC}"
 }
 
@@ -904,27 +766,23 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-npx clawhub install --force mcporter
+# npx clawhub install --force mcporter
 
-# --- Step 1: OpenClaw Workspace Setup ---
-
-echo -e "${BOLD}Step 1: OpenClaw Workspace Setup${NC}"
-echo ""
-install_security_guidelines
-
-# --- Step 2: MCP Server Configuration ---
+# --- Step 1: MCP Server Configuration ---
 
 echo ""
-echo -e "${BOLD}Step 2: MCP Server Configuration${NC}"
+echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
 echo ""
 
 SERVER_OPTIONS=(
     "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
     "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
+    "ainft-merchant - AINFT merchant MCP (remote recharge tools)"
 )
 SERVER_IDS=(
     "mcp-server-tron"
     "bnbchain-mcp"
+    "ainft-merchant"
 )
 
 SELECTED_INDICES=()
@@ -960,7 +818,7 @@ else
                  echo ""
                  
                  if [ "$cred_choice" = "1" ]; then
-                     echo -e "${INFO}Using Agent Wallet mode for mcp-server-tron.${NC}"
+                     echo -e "${INFO}Using Agent Wallet local mode for mcp-server-tron.${NC}"
                      echo -e "${MUTED}The MCP server will use the active TRON wallet in your agent-wallet secrets directory.${NC}"
                      echo ""
                      echo -e "${BOLD}Ensure these are available in your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
@@ -1102,20 +960,31 @@ EOF
                  
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
+
+            "ainft-merchant")
+                 JSON_PAYLOAD=$(cat <<EOF
+{
+  "baseUrl": "https://ainft-agent.bankofai.io/mcp"
+}
+EOF
+)
+
+                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 ;;
         esac
 
         echo -e "${SUCCESS}✓ Configuration saved for $SERVER_ID.${NC}"
     done
 fi
 
-# --- Step 3: Agent Wallet Setup ---
+# --- Step 2: Agent Wallet Setup ---
 
 setup_agent_wallet
 
-# --- Step 4: Skills Installation from GitHub ---
+# --- Step 3: Skills Installation from GitHub ---
 
 echo ""
-echo -e "${BOLD}Step 4: Skills Installation from GitHub${NC}"
+echo -e "${BOLD}Step 3: Skills Installation from GitHub${NC}"
 echo ""
 
 if ! clone_skills_repo; then
@@ -1190,7 +1059,8 @@ fi
 if [ "${AGENT_WALLET_SETUP}" = true ]; then
     echo -e "${SUCCESS}✓${NC} ${BOLD}Agent Wallet configured${NC}"
     echo -e "  ${MUTED}Secrets dir: ${INFO}~/.agent-wallet${NC}"
-    echo -e "  ${MUTED}Set ${INFO}TRON_AGENT_WALLET_NAME${MUTED} and ${INFO}AGENT_WALLET_PASSWORD${MUTED} in your shell profile${NC}"
+    echo -e "  ${MUTED}Set ${INFO}TRON_AGENT_WALLET_NAME${MUTED} and ${INFO}AGENT_WALLET_PASSWORD${MUTED} for local wallet mode${NC}"
+    echo -e "  ${MUTED}Or use ${INFO}AGENT_WALLET_PRIVATE_KEY${MUTED} / ${INFO}AGENT_WALLET_MNEMONIC${MUTED} for single-wallet mode${NC}"
     echo ""
 fi
 
@@ -1201,14 +1071,6 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     done
     echo -e "  ${INFO}Location: ${BOLD}$TARGET_DIR${NC}"
     echo ""
-    
-    # Check if AGENTS.md was installed
-    if [ -f "$HOME/.openclaw/workspace/AGENTS.md" ]; then
-        echo -e "${SUCCESS}✓${NC} ${BOLD}Security guidelines installed${NC}"
-        echo -e "  ${INFO}Location: ${BOLD}$HOME/.openclaw/workspace/AGENTS.md${NC}"
-        echo -e "  ${MUTED}OpenClaw will automatically load these rules${NC}"
-        echo ""
-    fi
 fi
 
 if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
@@ -1223,14 +1085,14 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
                 ;;
-            "8004-skill")
-                echo -e "     ${MUTED}\"Read the 8004-skill and register my AI agent on TRON\"${NC}"
+            "ainft-skill")
+                echo -e "     ${MUTED}\"Read the ainft-skill and top up AINFT with 1 USDT\"${NC}"
+                ;;
+            "tronscan-skill")
+                echo -e "     ${MUTED}\"Read the tronscan-skill and look up the latest TRON block\"${NC}"
                 ;;
             "x402-payment")
                 echo -e "     ${MUTED}\"Read the x402-payment skill and explain how it works\"${NC}"
-                ;;
-            "x402-payment-demo")
-                echo -e "     ${MUTED}\"Read the x402-payment-demo skill and run the demo\"${NC}"
                 ;;
         esac
     done

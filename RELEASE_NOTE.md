@@ -1,46 +1,36 @@
-# Release Notes: OpenClaw Extension v1.0.0
+# Release Notes: OpenClaw Extension v1.2.14
 
-**Date**: February 4, 2026  
-**Version**: 1.0.0
+**Date**: March 15, 2026  
+**Version**: 1.2.14
 
-## 🚀 Overview
-We are excited to announce the launch of **OpenClaw Extension v1.0.0**, the definitive toolkit for AI Agents on the TRON network. 
+## Overview
 
-This release introduces two powerful pillars that transform how agents interact with the blockchain economy: **Direct Blockchain Access** (via MCP) and **Autonomous Payments** (via x402).
+This release pins the installer to a stable skills tag and aligns the extension with the current supported skill set.
 
-## ✨ Major Features
+## Highlights
 
-### 1. 🔗 mcp-server-tron
-The bridge between your LLM and the TRON blockchain.
-- **What it is**: An [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that exposes TRON blockchain capabilities as tool-use functions for AI.
-- **Capabilities**:
-  - **Wallet**: Check balances (`get_balance`), track assets (`get_token_balance`).
-  - **DeFi**: Execute token transfers (`transfer_trc20`), interact with any smart contract (`read_contract`, `write_contract`).
-  - **Network**: Monitor chain state, block height, and energy costs.
-- **Integration**: Works out-of-the-box with any MCP-compliant client (Claude Desktop, Cursor, etc.).
+### 1. Pinned Skills Tag
+The installer now defaults to the `v1.4.12` tag of the [skills repository](https://github.com/BofAI/skills). This avoids unexpected changes from tracking the repository `main` branch and gives QA / ops a stable install target.
 
-### 2. 💳 x402-payment
-The financial layer for the agent economy.
-- **What it is**: A specialized agent skill implementing the **HTTP 402** protocol.
-- **Use Case**: Enables agents to consume paid APIs seamlessly. When an agent hits a paywall (402 status), this skill intercepts the request, negotiates the price, pays in USDT, and retries the request—all autonomously.
-- **Features**:
-  - **Smart Approvals**: Optimizes gas usage with intelligent token approval strategies.
-  - **Settlement**: verifiable on-chain settlement for every API call.
+### 2. Updated Supported Skills
+The installer flow and documentation now match the current supported skill set:
+- `ainft-skill`
+- `tronscan-skill`
+- `sunswap`
+- `x402-payment`
 
-## 🛠 Installation & Setup
+### 3. Improved Skill Setup Prompts
+The installer now includes:
+- local `AINFT_API_KEY` setup guidance for `ainft-skill`
+- `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`
+- removal of legacy `8004-skill` prompts and references
 
-We've introduced a new interactive installer to get you started in seconds.
+## Installation Summary
 
 ```bash
-# Install / Update to v1.0.0
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
 ```
 
-The installer will:
-1.  Set up the `mcp-server-tron` in your `mcporter` configuration.
-2.  Install the `x402-payment` skill and other selected skills.
-3.  Securely configure your TRON credentials locally.
-
-## 🔗 Links
-- **MCP Server Source**: [bankofai/mcp-server-tron](https://github.com/bankofai/mcp-server-tron)
-- **Extension Repo**: [BofAI/openclaw-extension](https://github.com/BofAI/openclaw-extension)
+## Configuration Notes
+- You can still override the pinned skills tag by exporting `GITHUB_BRANCH` before running the installer.
+- Re-running the installer will refresh the currently supported OpenClaw skills list and prompts.
