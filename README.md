@@ -1,6 +1,6 @@
 # OpenClaw Extension
 
-OpenClaw Extension is a suite of tools developed by **BankofAI** to empower AI Agents with financial sovereignty. It enables agents to hold wallets, execute transactions, and monetize services using the **x402 Protocol** (HTTP 402 Payment Required).
+OpenClaw Extension is a suite of tools developed by **BANK OF AI** to empower AI Agents with financial sovereignty. It enables agents to hold wallets, execute transactions, and monetize services using the **x402 Protocol** (HTTP 402 Payment Required).
 
 ## 🚀 Mission
 
@@ -28,10 +28,10 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
   - Wallet operations, smart contracts, token transfers
   - Cross-chain capabilities
 
-- **AINFT merchant MCP** - Remote AINFT recharge MCP
-  - Default remote endpoint: `https://ainft-agent.bankofai.io/mcp`
-  - Exposed through `mcporter` as `ainft-merchant`
-  - Intended for AINFT recharge flows
+- **BANK OF AI recharge MCP** - Remote BANK OF AI recharge MCP
+  - Default remote endpoint: `https://recharge.bankofai.io/mcp`
+  - Exposed through `mcporter` as `bankofai-recharge`
+  - Intended for BANK OF AI recharge flows
 
 ### 2. Skills
 
@@ -44,7 +44,7 @@ By default, it installs from the pinned skills tag `v1.4.12`. You can still over
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
 - **tronscan-skill** - TRON blockchain data lookup via the TronScan API
 - **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
-- **ainft-skill** - Local AINFT balance/order queries plus TRC20 top-up via remote MCP
+- **recharge-skill** - Local BANK OF AI balance/order queries plus recharge via remote MCP
 
 For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
@@ -77,9 +77,9 @@ cd openclaw-extension
 
 ### What Gets Installed
 
-- ✅ **MCP servers** - TRON, BSC, and optional AINFT merchant MCP entries configured in `~/.mcporter/mcporter.json`
+- ✅ **MCP servers** - TRON, BSC, and optional BANK OF AI recharge MCP entries configured in `~/.mcporter/mcporter.json`
 - ✅ **Skills** - Pre-built workflows installed to your chosen location
-- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `ainft-merchant` (`https://ainft-agent.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
+- ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `bankofai-recharge` (`https://recharge.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
 
