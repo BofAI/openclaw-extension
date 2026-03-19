@@ -1,29 +1,22 @@
-# Release Notes: OpenClaw Extension v1.2.15
+# Release Notes: OpenClaw Extension v1.3.0
 
-**Date**: March 17, 2026  
-**Version**: 1.2.15
+**Date**: March 19, 2026  
+**Version**: 1.3.0
 
 ## Overview
 
-This release pins the installer to a stable skills tag and aligns the extension with the current supported skill set.
+This release adds Agent Wallet integration to the installer and updates the extension workflow around wallet configuration for `x402-payment` and `mcp-server-tron`.
 
 ## Highlights
 
-### 1. Pinned Skills Tag
-The installer now defaults to the `v1.4.13` tag of the [skills repository](https://github.com/BofAI/skills). This avoids unexpected changes from tracking the repository `main` branch and gives QA / ops a stable install target.
+### 1. Agent Wallet Integration
+The installer now supports Agent Wallet as part of the main setup flow. This improves the wallet management experience for `x402-payment` and `mcp-server-tron` and makes the overall configuration process more consistent.
 
-### 2. Updated Supported Skills
-The installer flow and documentation now match the current supported skill set:
-- `recharge-skill`
-- `tronscan-skill`
-- `sunswap`
-- `x402-payment`
+### 2. Updated Credential Flow
+Credential configuration has been updated around Agent Wallet support, while keeping environment-variable and config-based setup paths available for compatible components.
 
-### 3. Improved Skill Setup Prompts
-The installer now includes:
-- local `BANKOFAI_API_KEY` setup guidance for `recharge-skill` for BANK OF AI accounts
-- `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`
-- removal of legacy `8004-skill` prompts and references
+### 3. Documentation Refresh
+Project documentation has been updated to reflect the new wallet configuration flow, and unused mnemonic-related guidance has been removed.
 
 ## Installation Summary
 
@@ -32,5 +25,6 @@ curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads
 ```
 
 ## Configuration Notes
-- You can still override the pinned skills tag by exporting `GITHUB_BRANCH` before running the installer.
-- Re-running the installer will refresh the currently supported OpenClaw skills list and prompts.
+- The installer now defaults to the `dev/agent_wallet_0317` branch of the [skills repository](https://github.com/BofAI/skills).
+- You can still override the skills source by exporting `GITHUB_BRANCH` before running the installer.
+- Re-running the installer will refresh the wallet setup flow and related prompts.
