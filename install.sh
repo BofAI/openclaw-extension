@@ -33,6 +33,12 @@ GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
+CLEAN_INSTALL=false
+AGENT_WALLET_MODE=""
+AGENT_WALLET_PRIVATE_KEY=""
+AGENT_WALLET_MNEMONIC=""
+AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"
+AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
 
 # --- Cleanup ---
 cleanup() {
@@ -204,6 +210,269 @@ ask_input() {
         read -r input_val <&3
     fi
     printf -v "$var_name" '%s' "$input_val"
+}
+
+json_string_or_null() {
+    local value="${1:-}"
+    if [ -z "$value" ]; then
+        echo "null"
+    else
+        printf '%s' "$value" | $PYTHON_CMD -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
+    fi
+}
+
+is_strong_password() {
+    local password="$1"
+    [[ ${#password} -ge 8 ]] && [[ "$password" =~ [A-Z] ]] && [[ "$password" =~ [a-z] ]] && [[ "$password" =~ [0-9] ]] && [[ "$password" =~ [^A-Za-z0-9] ]]
+}
+
+clear_all_mcp_entries() {
+    mkdir -p "$MCP_CONFIG_DIR"
+    MCP_FILE_PATH="$MCP_CONFIG_FILE" $PYTHON_CMD - <<'PY'
+import json
+import os
+
+path = os.environ["MCP_FILE_PATH"]
+data = {}
+
+if os.path.exists(path):
+    try:
+        with open(path, "r") as f:
+            content = f.read().strip()
+            if content:
+                data = json.loads(content)
+    except Exception:
+        data = {}
+
+data["mcpServers"] = {}
+
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+PY
+}
+
+clear_all_skills_under_dir() {
+    local skills_dir="$1"
+    if [ -d "$skills_dir" ]; then
+        find "$skills_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    fi
+}
+
+run_clean_install() {
+    echo ""
+    echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!                    CLEAN INSTALL MODE                    !!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!                  THIS ACTION IS IRREVERSIBLE             !!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
+    echo ""
+    echo -e "${WARN}The following data will be permanently deleted:${NC}"
+    echo -e "  ${WARN}•${NC} AgentWallet local data: ${INFO}$HOME/.agent-wallet${NC}"
+    echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
+    echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
+    echo ""
+    echo -ne "${ERROR}?${NC} Continue with CLEAN install? ${MUTED}(y/N)${NC}: "
+    read -r clean_confirm <&3
+    if [[ ! "$clean_confirm" =~ ^[Yy]$ ]]; then
+        echo -e "${MUTED}Clean install cancelled.${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -ne "${ERROR}?${NC} Type ${BOLD}CLEAN${NC}${ERROR} to confirm permanent deletion${NC}: "
+    read -r clean_word <&3
+    if [ "$clean_word" != "CLEAN" ]; then
+        echo -e "${WARN}Confirmation text mismatch. Clean install cancelled.${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo ""
+    echo -e "${INFO}Running cleanup...${NC}"
+    rm -rf "$HOME/.agent-wallet"
+    clear_all_mcp_entries
+    clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
+    clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
+    echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
+    echo ""
+}
+
+choose_install_mode() {
+    echo ""
+    echo -e "${BOLD}Installation Mode${NC}"
+    echo -e "  ${INFO}1)${NC} Normal install ${SUCCESS}[Recommended]${NC}"
+    echo -e "  ${INFO}2)${NC} Clean install ${WARN}(delete existing AgentWallet/MCP/skills first)${NC}"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
+    read -r install_mode_choice <&3
+    install_mode_choice=${install_mode_choice:-1}
+
+    if [ "$install_mode_choice" = "2" ]; then
+        CLEAN_INSTALL=true
+        run_clean_install
+    fi
+}
+
+ensure_agent_wallet_cli() {
+    if command -v agent-wallet &> /dev/null; then
+        return 0
+    fi
+
+    echo -e "${INFO}Installing AgentWallet CLI...${NC}"
+    if ! npm install -g @bankofai/agent-wallet; then
+        echo -e "${ERROR}Error: Failed to install AgentWallet CLI.${NC}"
+        echo -e "${INFO}Try manually: npm install -g @bankofai/agent-wallet${NC}"
+        exit 1
+    fi
+
+    if ! command -v agent-wallet &> /dev/null; then
+        echo -e "${ERROR}Error: agent-wallet command not found after installation.${NC}"
+        exit 1
+    fi
+}
+
+is_agent_wallet_initialized() {
+    local wallet_dir="$AGENT_WALLET_DIR"
+    [ -d "$wallet_dir" ] && [ -f "$wallet_dir/master.json" ] && [ -f "$wallet_dir/wallets_config.json" ]
+}
+
+setup_agent_wallet() {
+    echo ""
+    echo -e "${BOLD}Step 0: AgentWallet Setup${NC}"
+    echo ""
+
+    ensure_agent_wallet_cli
+
+    if is_agent_wallet_initialized; then
+        AGENT_WALLET_MODE="local"
+        echo -e "${SUCCESS}✓ AgentWallet already initialized${NC}"
+        echo -e "${MUTED}  Path: $AGENT_WALLET_DIR${NC}"
+        echo -e "${MUTED}  Continuing without asking for AGENT_WALLET_PASSWORD.${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -e "${INFO}AgentWallet is not initialized yet. Choose setup mode:${NC}"
+    echo -e "  ${INFO}1)${NC} Local mode ${SUCCESS}[Recommended]${NC}"
+    echo -e "     ${MUTED}Password-protected local wallet storage${NC}"
+    echo -e "  ${INFO}2)${NC} Static mode"
+    echo -e "     ${MUTED}Use AGENT_WALLET_PRIVATE_KEY or AGENT_WALLET_MNEMONIC${NC}"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
+    read -r wallet_mode_choice <&3
+    wallet_mode_choice=${wallet_mode_choice:-1}
+
+    case "$wallet_mode_choice" in
+        1)
+            AGENT_WALLET_MODE="local"
+            local pw1=""
+            local pw2=""
+
+            echo ""
+            echo -e "${BOLD}Local mode setup${NC}"
+            while true; do
+                echo -ne "${INFO}?${NC} Create AgentWallet password ${MUTED}(hidden)${NC}: "
+                read -rs pw1 <&3
+                echo ""
+                echo -ne "${INFO}?${NC} Confirm password ${MUTED}(hidden)${NC}: "
+                read -rs pw2 <&3
+                echo ""
+
+                if [ -z "$pw1" ]; then
+                    echo -e "${WARN}Password cannot be empty.${NC}"
+                    continue
+                fi
+                if [ "$pw1" != "$pw2" ]; then
+                    echo -e "${WARN}Passwords do not match. Please try again.${NC}"
+                    continue
+                fi
+                if ! is_strong_password "$pw1"; then
+                    echo -e "${WARN}Password must be 8+ chars and include uppercase, lowercase, number, and special character.${NC}"
+                    continue
+                fi
+                break
+            done
+
+            echo ""
+            echo -e "${INFO}Launching AgentWallet initialization...${NC}"
+            echo -e "${MUTED}Follow the prompts to import your wallet credential.${NC}"
+            if ! agent-wallet start -p "$pw1"; then
+                echo -e "${WARN}Retrying initialization with default wallet type...${NC}"
+                if ! agent-wallet start -p "$pw1" -i tron; then
+                    echo -e "${ERROR}AgentWallet initialization failed.${NC}"
+                    exit 1
+                fi
+            fi
+            echo ""
+            ;;
+        2)
+            echo ""
+            echo -e "${BOLD}Static mode setup${NC}"
+            echo -e "  ${INFO}1)${NC} AGENT_WALLET_PRIVATE_KEY ${SUCCESS}[Recommended]${NC}"
+            echo -e "  ${INFO}2)${NC} AGENT_WALLET_MNEMONIC"
+            echo ""
+            echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
+            read -r static_choice <&3
+            static_choice=${static_choice:-1}
+
+            case "$static_choice" in
+                1)
+                    AGENT_WALLET_MODE="static_private_key"
+                    while true; do
+                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_PRIVATE_KEY ${MUTED}(hidden)${NC}: "
+                        read -rs AGENT_WALLET_PRIVATE_KEY <&3
+                        echo ""
+                        if [ -n "$AGENT_WALLET_PRIVATE_KEY" ]; then
+                            break
+                        fi
+                        echo -e "${WARN}AGENT_WALLET_PRIVATE_KEY cannot be empty.${NC}"
+                    done
+                    ;;
+                2)
+                    AGENT_WALLET_MODE="static_mnemonic"
+                    while true; do
+                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_MNEMONIC ${MUTED}(hidden)${NC}: "
+                        read -rs AGENT_WALLET_MNEMONIC <&3
+                        echo ""
+                        if [ -n "$AGENT_WALLET_MNEMONIC" ]; then
+                            break
+                        fi
+                        echo -e "${WARN}AGENT_WALLET_MNEMONIC cannot be empty.${NC}"
+                    done
+
+                    echo -ne "${INFO}?${NC} Enter AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX ${MUTED}(optional, default: 0)${NC}: "
+                    read -r AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX <&3
+                    AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX=${AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX:-0}
+                    if [[ ! "$AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX" =~ ^[0-9]+$ ]]; then
+                        echo -e "${WARN}Invalid account index. Using default 0.${NC}"
+                        AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"
+                    fi
+                    ;;
+                *)
+                    echo -e "${WARN}Invalid choice, using private key mode.${NC}"
+                    AGENT_WALLET_MODE="static_private_key"
+                    while true; do
+                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_PRIVATE_KEY ${MUTED}(hidden)${NC}: "
+                        read -rs AGENT_WALLET_PRIVATE_KEY <&3
+                        echo ""
+                        if [ -n "$AGENT_WALLET_PRIVATE_KEY" ]; then
+                            break
+                        fi
+                        echo -e "${WARN}AGENT_WALLET_PRIVATE_KEY cannot be empty.${NC}"
+                    done
+                    ;;
+            esac
+            echo ""
+            ;;
+        *)
+            echo -e "${WARN}Invalid choice, defaulting to local mode.${NC}"
+            AGENT_WALLET_MODE="local"
+            if ! agent-wallet start; then
+                echo -e "${ERROR}AgentWallet initialization failed.${NC}"
+                exit 1
+            fi
+            echo ""
+            ;;
+    esac
 }
 
 # --- Multiselect Function ---
@@ -484,37 +753,6 @@ copy_skill() {
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
     fi
     
-    # Special handling for sunswap: remind about private key
-    if [ "$skill_id" = "sunswap" ]; then
-        echo ""
-        echo -e "${BOLD}SunSwap Private Key Configuration${NC}"
-        echo -e "${MUTED}SunSwap scripts need a private key for swap operations${NC}"
-        echo ""
-        
-        # Check if key already exists
-        local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
-        local has_env_key=false
-        
-        if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
-            has_env_key=true
-        fi
-        
-        if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-            echo -e "${SUCCESS}✓ Private key already configured${NC}"
-            if [ -f "$key_file" ]; then
-                echo -e "${MUTED}  Found at: $key_file${NC}"
-            fi
-            if [ "$has_env_key" = true ]; then
-                echo -e "${MUTED}  Found in environment variable${NC}"
-            fi
-        else
-            echo -e "${INFO}Configure private key using one of these methods:${NC}"
-            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
-            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-        fi
-        echo ""
-    fi
-
     # Special handling for x402-payment: configure gasfree API credentials
     if [ "$skill_id" = "x402-payment" ]; then
         echo ""
@@ -610,7 +848,11 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-# npx clawhub install --force mcporter
+# Choose installation mode (Normal / Clean)
+choose_install_mode
+
+# Step 0: AgentWallet setup
+setup_agent_wallet
 
 # --- Step 1: MCP Server Configuration ---
 
@@ -646,72 +888,43 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
-                 echo ""
-                 
-                 # Ask for credential storage method
-                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
-                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
-                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
-                 echo -e "  ${INFO}2)${NC} Use environment variables"
-                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
-                 echo ""
-                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
-                 
-                 read -r cred_choice <&3
-                 cred_choice=${cred_choice:-2}
-                 
-                 echo ""
-                 
-                 if [ "$cred_choice" = "1" ]; then
-                     # Store in config file
-                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 1 "Your TRON wallet private key. Required for signing transactions."
-                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Your TronGrid API Key. Required for reliable network access."
+                 echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
+                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Optional but recommended for reliable network access."
+                 echo -e "${MUTED}Saving configuration...${NC}"
 
-                     echo -e "${MUTED}Saving configuration...${NC}"
+                 TRON_API_KEY_VAL=$(json_string_or_null "$TRON_API_KEY")
+                 AGENT_WALLET_PRIVATE_KEY_VAL="null"
+                 AGENT_WALLET_MNEMONIC_VAL="null"
+                 AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL="null"
 
-                     TRON_KEY_VAL="\"$TRON_KEY\""
-                     if [ -z "$TRON_KEY" ]; then TRON_KEY_VAL="null"; fi
+                 if [ "$AGENT_WALLET_MODE" = "static_private_key" ]; then
+                     AGENT_WALLET_PRIVATE_KEY_VAL=$(json_string_or_null "$AGENT_WALLET_PRIVATE_KEY")
+                 elif [ "$AGENT_WALLET_MODE" = "static_mnemonic" ]; then
+                     AGENT_WALLET_MNEMONIC_VAL=$(json_string_or_null "$AGENT_WALLET_MNEMONIC")
+                     AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL=$(json_string_or_null "$AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX")
+                 fi
 
-                     TRON_API_KEY_VAL="\"$TRON_API_KEY\""
-                     if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
-
-                     JSON_PAYLOAD=$(cat <<EOF
+                 JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"],
   "env": {
-    "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
-    "TRONGRID_API_KEY": $TRON_API_KEY_VAL
+    "TRONGRID_API_KEY": $TRON_API_KEY_VAL,
+    "AGENT_WALLET_PRIVATE_KEY": $AGENT_WALLET_PRIVATE_KEY_VAL,
+    "AGENT_WALLET_MNEMONIC": $AGENT_WALLET_MNEMONIC_VAL,
+    "AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX": $AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL
   }
 }
 EOF
 )
-                 else
-                     # Use environment variables
-                     echo -e "${INFO}Using environment variables for credentials.${NC}"
-                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
-                     echo ""
-                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
-                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
-                     echo ""
-                     
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"]
-}
-EOF
-)
-                 fi
-                 
+
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
             
             "bnbchain-mcp")
+                 echo -e "${WARN}bnbchain-mcp currently does not support AgentWallet.${NC}"
+                 echo -e "${WARN}This server still uses PRIVATE_KEY configuration.${NC}"
+                 echo ""
                  echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
                  echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
                  echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"

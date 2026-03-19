@@ -5,6 +5,23 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.16] - 2026-03-20
+
+### Added
+- **AgentWallet First Step**: Installer now runs AgentWallet setup before MCP/skills installation, with Local/Static mode selection for first-time setup.
+- **Clean Install Mode**: Added an optional destructive clean install flow that:
+  - deletes `~/.agent-wallet`
+  - clears all MCP entries under `~/.mcporter/mcporter.json`
+  - removes all installed skills under `~/.openclaw/skills` and `.openclaw/skills`
+  - requires explicit high-visibility confirmation plus typing `CLEAN`
+
+### Changed
+- **Local Wallet Reuse**: If AgentWallet is already initialized locally, installer now proceeds without prompting for `AGENT_WALLET_PASSWORD`.
+- **TRON MCP Credentials**: Removed `TRON_PRIVATE_KEY` prompts from `mcp-server-tron` setup and aligned it with AgentWallet-based configuration.
+- **Mnemonic Prompt Logic**: `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` is now only requested when mnemonic mode is selected.
+- **bnbchain Compatibility Notice**: Installer now explicitly states `bnbchain-mcp` is not yet AgentWallet-compatible and keeps existing `PRIVATE_KEY` flow.
+- **Skill Setup Prompts**: Removed SunSwap private-key setup reminders from the skills installation flow.
+
 ## [1.2.14] - 2026-03-15
 
 ### Changed
