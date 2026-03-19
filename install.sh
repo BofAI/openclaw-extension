@@ -102,7 +102,7 @@ check_env() {
         echo -e "${ERROR}Error: Neither 'python3' nor 'python' found (required for JSON processing).${NC}"
         exit 1
     fi
-    
+
     # Check if OpenClaw is installed (mcporter config directory should exist)
     if [ ! -d "$HOME/.openclaw" ]; then
         echo -e "${WARN}Warning: OpenClaw doesn't appear to be installed.${NC}"
@@ -114,6 +114,14 @@ check_env() {
         if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
             exit 0
         fi
+    fi
+}
+
+run_with_tty() {
+    if [ -e /dev/tty ]; then
+        "$@" < /dev/tty > /dev/tty
+    else
+        "$@"
     fi
 }
 
@@ -680,7 +688,7 @@ setup_agent_wallet() {
             echo -e "${INFO}Running: agent-wallet init${NC}"
             echo -e "${MUTED}  You will be prompted for a master password.${NC}"
             echo ""
-            agent-wallet init
+            run_with_tty agent-wallet init
             echo ""
         else
             echo -e "${MUTED}Skipping init. Run later: ${BOLD}agent-wallet init${NC}"
@@ -722,7 +730,7 @@ setup_agent_wallet() {
                 echo -e "${INFO}Adding TRON wallet — Running: agent-wallet add${NC}"
                 echo -e "${MUTED}  Choose type ${BOLD}tron_local${NC}${MUTED} when prompted.${NC}"
                 echo ""
-                agent-wallet add
+                run_with_tty agent-wallet add
                 ;;
         esac
 
@@ -731,7 +739,7 @@ setup_agent_wallet() {
             echo -e "${INFO}Adding EVM wallet — Running: agent-wallet add${NC}"
             echo -e "${MUTED}  Choose type ${BOLD}evm_local${NC}${MUTED} when prompted.${NC}"
             echo ""
-            agent-wallet add
+            run_with_tty agent-wallet add
         fi
 
         echo ""
