@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Pinned Skills Release**: The installer now defaults to the `v1.4.12` tag of the [skills repository](https://github.com/BofAI/skills).
 
+## [1.2.15] - 2026-03-17
+
+### Changed
+- **Pinned Skills Release**: The installer now defaults to the `v1.4.13` tag of the [skills repository](https://github.com/BofAI/skills).
+
 ## [1.2.13] - 2026-03-15
 
 ### Changed
@@ -20,10 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Pinned Skills Release**: The installer now defaults to the `v1.4.10` tag of the [skills repository](https://github.com/BofAI/skills) instead of tracking `main`.
-- **Installer Skill Set**: Updated installer prompts and documentation to match the current supported skills: `ainft-skill`, `tronscan-skill`, `sunswap`, `x402-payment`, and `x402-payment-demo`.
+- **Installer Skill Set**: Updated installer prompts and documentation to match the current supported skills: `recharge-skill`, `tronscan-skill`, `sunswap`, `x402-payment`, and `x402-payment-demo`.
 
 ### Fixed
-- **AINFT Skill Setup**: Added local `AINFT_API_KEY` configuration guidance for `ainft-skill`.
+- **recharge-skill Setup**: Added local `BANKOFAI_API_KEY` configuration guidance for `recharge-skill`.
 - **TronScan Skill Setup**: Added `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`.
 - **Legacy Cleanup**: Removed outdated `8004-skill` references from installer prompts and docs.
 
@@ -44,20 +49,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced README**: Added dedicated section for Gasfree API credentials and configuration best practices.
 
 ### Fixed
-- **AINFT Setup**: Resolved several issues in the AINFT merchant setup and configuration flow within `install.sh`.
+- **Recharge Skill Setup**: Resolved several issues in the BANK OF AI recharge skill setup and configuration flow within `install.sh`.
 
 ## [1.0.3] - 2026-03-09
 
 ### Added
-- **AINFT merchant MCP installer option**: `install.sh` can now register `ainft-merchant` in `~/.mcporter/mcporter.json`
-  - Remote endpoint: `https://ainft-agent.bankofai.io/mcp`
+- **BANK OF AI recharge MCP installer option**: `install.sh` can now register `bankofai-recharge` in `~/.mcporter/mcporter.json`
+  - Remote endpoint: `https://recharge.bankofai.io/mcp`
 - **Documentation refresh**: `RELEASE_NOTE.md` now reflects the current extension scope and installer behavior
 
 ### Changed
 - **Extension docs simplified**:
-  - removed AINFT provider setup guidance from extension documentation
+  - removed legacy provider setup guidance from extension documentation
   - kept documentation focused on installer-managed MCP servers and skills
-- **AINFT skill docs simplified**:
+- **Recharge skill docs simplified**:
   - production only
   - local balance and order queries only
 
@@ -79,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `tronscan-skill` - TRON blockchain data lookup via the TronScan API
   - `x402-payment` - Agent payment protocol implementation
   - `x402-payment-demo` - Payment protocol demo
-  - `ainft-skill` - AINFT balance/order queries and TRC20 top-up flow
+  - `recharge-skill` - BANK OF AI balance/order queries and recharge flow
 
 ### Changed
 - **Removed clawhub dependency**: Skills are now installed directly from GitHub
