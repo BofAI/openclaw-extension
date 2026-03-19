@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# OpenClaw Extension Installer (by BankofAI)
+# OpenClaw Extension Installer (by BANK OF AI)
 # Installs MCP server and TRON skills from GitHub
 
 # --- Colors & Styling ---
@@ -357,21 +357,29 @@ select_install_target() {
     echo ""
 }
 
-configure_ainft_api_key() {
+pretty_skill_name() {
+    local skill_id="$1"
+    case "$skill_id" in
+        "recharge-skill") echo "recharge-skill" ;;
+        *) echo "$skill_id" ;;
+    esac
+}
+
+configure_bankofai_api_key() {
     echo ""
-    echo -e "${BOLD}AINFT API Key Configuration${NC}"
-    echo -e "${MUTED}ainft-skill uses your local AINFT API key for balance and order queries.${NC}"
-    echo -e "${MUTED}Top-up requests use the remote ainft-merchant MCP endpoint.${NC}"
+    echo -e "${BOLD}recharge-skill API Key Configuration${NC}"
+    echo -e "${MUTED}recharge-skill uses your local BANK OF AI API key for balance and order queries.${NC}"
+    echo -e "${MUTED}Recharge requests use the remote BANK OF AI recharge MCP endpoint.${NC}"
     echo ""
 
-    local ainft_config="$HOME/.mcporter/ainft-config.json"
+    local bankofai_config="$HOME/.mcporter/bankofai-config.json"
     local has_key="no"
 
-    if [ -f "$ainft_config" ]; then
+    if [ -f "$bankofai_config" ]; then
         has_key=$($PYTHON_CMD -c "
 import json
 try:
-    c = json.load(open('$ainft_config'))
+    c = json.load(open('$bankofai_config'))
     print('yes' if c.get('api_key') else 'no')
 except Exception:
     print('no')
@@ -379,29 +387,29 @@ except Exception:
     fi
 
     if [ "$has_key" = "yes" ]; then
-        echo -e "${SUCCESS}✓ AINFT API key already configured${NC}"
-        echo -e "${MUTED}  Config: $ainft_config${NC}"
+        echo -e "${SUCCESS}✓ BANK OF AI API key already configured${NC}"
+        echo -e "${MUTED}  Config: $bankofai_config${NC}"
         echo ""
-        echo -ne "${INFO}?${NC} Reconfigure AINFT API key? ${MUTED}(y/N)${NC}: "
-        read -r reconfig_ainft <&3
-        if [[ ! "$reconfig_ainft" =~ ^[Yy]$ ]]; then
+        echo -ne "${INFO}?${NC} Reconfigure BANK OF AI API key? ${MUTED}(y/N)${NC}: "
+        read -r reconfig_bankofai <&3
+        if [[ ! "$reconfig_bankofai" =~ ^[Yy]$ ]]; then
             echo ""
             return 0
         fi
     fi
 
-    echo -ne "${INFO}?${NC} Enter AINFT_API_KEY ${MUTED}(optional, hidden)${NC}: "
-    read -rs ainft_api_key <&3
+    echo -ne "${INFO}?${NC} Enter BANKOFAI_API_KEY ${MUTED}(optional, hidden)${NC}: "
+    read -rs bankofai_api_key <&3
     echo ""
 
-    if [ -n "$ainft_api_key" ]; then
-        mkdir -p "$(dirname "$ainft_config")"
-        AINFT_API_KEY="$ainft_api_key" AINFT_CONFIG="$ainft_config" $PYTHON_CMD - <<'PY'
+    if [ -n "$bankofai_api_key" ]; then
+        mkdir -p "$(dirname "$bankofai_config")"
+        BANKOFAI_API_KEY="$bankofai_api_key" BANKOFAI_CONFIG="$bankofai_config" $PYTHON_CMD - <<'PY'
 import json
 import os
 
-config_path = os.environ["AINFT_CONFIG"]
-api_key = os.environ["AINFT_API_KEY"]
+config_path = os.environ["BANKOFAI_CONFIG"]
+api_key = os.environ["BANKOFAI_API_KEY"]
 payload = {
     "api_key": api_key,
     "base_url": "https://chat.ainft.com"
@@ -409,13 +417,13 @@ payload = {
 with open(config_path, "w") as f:
     json.dump(payload, f, indent=2)
 PY
-        chmod 600 "$ainft_config"
-        echo -e "${SUCCESS}✓ AINFT config saved to $ainft_config${NC}"
+        chmod 600 "$bankofai_config"
+        echo -e "${SUCCESS}✓ BANK OF AI config saved to $bankofai_config${NC}"
         echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
     else
-        echo -e "${WARN}No AINFT API key entered, skipping local AINFT configuration${NC}"
-        echo -e "${INFO}Configure later by creating $ainft_config:${NC}"
-        echo -e "${MUTED}  {\"api_key\": \"YOUR_AINFT_API_KEY\", \"base_url\": \"https://chat.ainft.com\"}${NC}"
+        echo -e "${WARN}No BANK OF AI API key entered, skipping local BANK OF AI configuration${NC}"
+        echo -e "${INFO}Configure later by creating $bankofai_config:${NC}"
+        echo -e "${MUTED}  {\"api_key\": \"YOUR_BANKOFAI_API_KEY\"}${NC}"
     fi
 
     echo ""
@@ -443,7 +451,9 @@ copy_skill() {
     local skill_id="$1"
     local target_dir="$2"
     
-    echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
+    local skill_label
+    skill_label=$(pretty_skill_name "$skill_id")
+    echo -e "${INFO}Installing ${BOLD}$skill_label${NC}${INFO}...${NC}"
     
     if [ ! -d "$TEMP_DIR/$skill_id" ]; then
         echo -e "${ERROR}✗ Skill $skill_id not found in repository${NC}"
@@ -456,11 +466,11 @@ copy_skill() {
     fi
     
     if [ -d "$target_dir/$skill_id" ]; then
-        echo -e "${WARN}⚠ $skill_id already exists${NC}"
+        echo -e "${WARN}⚠ $skill_label already exists${NC}"
         echo -ne "${INFO}?${NC} Overwrite? ${MUTED}(y/N)${NC}: "
         read -r confirm <&3
         if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            echo -e "${MUTED}  Skipped $skill_id${NC}"
+            echo -e "${MUTED}  Skipped $skill_label${NC}"
             return 0
         fi
         rm -rf "$target_dir/$skill_id"
@@ -576,8 +586,8 @@ with open('$x402_config', 'w') as f:
         echo ""
     fi
 
-    if [ "$skill_id" = "ainft-skill" ]; then
-        configure_ainft_api_key
+    if [ "$skill_id" = "recharge-skill" ]; then
+        configure_bankofai_api_key
     fi
 
     if [ "$skill_id" = "tronscan-skill" ]; then
@@ -585,8 +595,8 @@ with open('$x402_config', 'w') as f:
     fi
 
     if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
-        echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
-        INSTALLED_SKILLS+=("$skill_id")
+        echo -e "${SUCCESS}✓ $skill_label installed successfully${NC}"
+        INSTALLED_SKILLS+=("$skill_label")
         return 0
     else
         echo -e "${ERROR}✗ Installation failed${NC}"
@@ -757,7 +767,7 @@ setup_agent_wallet() {
 # --- Main Logic ---
 
 echo -e "${ACCENT}${BOLD}"
-echo "  🦞 OpenClaw Extension Installer (by BankofAI)"
+echo "  🦞 OpenClaw Extension Installer (by BANK OF AI)"
 echo -e "${NC}${ACCENT_DIM}  $TAGLINE${NC}"
 echo ""
 
@@ -777,12 +787,12 @@ echo ""
 SERVER_OPTIONS=(
     "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
     "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
-    "ainft-merchant - AINFT merchant MCP (remote recharge tools)"
+    "bankofai-recharge - BANK OF AI recharge MCP (remote recharge tools)"
 )
 SERVER_IDS=(
     "mcp-server-tron"
     "bnbchain-mcp"
-    "ainft-merchant"
+    "bankofai-recharge"
 )
 
 SELECTED_INDICES=()
@@ -961,10 +971,10 @@ EOF
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
 
-            "ainft-merchant")
+            "bankofai-recharge")
                  JSON_PAYLOAD=$(cat <<EOF
 {
-  "baseUrl": "https://ainft-agent.bankofai.io/mcp"
+  "baseUrl": "https://recharge.bankofai.io/mcp"
 }
 EOF
 )
@@ -997,6 +1007,7 @@ else
     for dir in "$TEMP_DIR"/*; do
         if [ -d "$dir" ] && [ -f "$dir/SKILL.md" ]; then
             skill_name=$(basename "$dir")
+            skill_label=$(pretty_skill_name "$skill_name")
             
             # Skip installer directory
             if [ "$skill_name" = "installer" ]; then
@@ -1015,7 +1026,7 @@ else
             fi
             
             SKILL_IDS+=("$skill_name")
-            SKILL_OPTIONS+=("$skill_name - $description")
+            SKILL_OPTIONS+=("$skill_label - $description")
         fi
     done
 
@@ -1085,8 +1096,8 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
             "sunswap")
                 echo -e "     ${MUTED}\"Read the sunswap skill and help me swap 100 USDT to TRX\"${NC}"
                 ;;
-            "ainft-skill")
-                echo -e "     ${MUTED}\"Read the ainft-skill and top up AINFT with 1 USDT\"${NC}"
+            "recharge-skill")
+                echo -e "     ${MUTED}\"Read the recharge-skill and recharge my BANK OF AI account with 1 USDT\"${NC}"
                 ;;
             "tronscan-skill")
                 echo -e "     ${MUTED}\"Read the tronscan-skill and look up the latest TRON block\"${NC}"
