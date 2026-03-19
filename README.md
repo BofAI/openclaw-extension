@@ -135,15 +135,9 @@ The installer offers five ways to configure blockchain credentials, depending on
 - Suitable for `x402-payment` when you want a single wallet from environment variables
 - Enabled when `AGENT_WALLET_PASSWORD` is **not** set and exactly one of the following is provided:
   - `AGENT_WALLET_PRIVATE_KEY`
-  - `AGENT_WALLET_MNEMONIC`
-- Optional:
-  - `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"`
 - Example:
   ```bash
   export AGENT_WALLET_PRIVATE_KEY="your_private_key_here"
-  # or
-  export AGENT_WALLET_MNEMONIC="word1 word2 ..."
-  export AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"
   ```
 
 **Option 3: Environment Variables**
@@ -170,7 +164,7 @@ The installer offers five ways to configure blockchain credentials, depending on
 
 For both `x402-payment` and `mcp-server-tron`:
 - Agent Wallet local mode is enabled when `AGENT_WALLET_PASSWORD` is set
-- Agent Wallet private key mode uses `AGENT_WALLET_PRIVATE_KEY` or `AGENT_WALLET_MNEMONIC`
+- Agent Wallet private key mode uses `AGENT_WALLET_PRIVATE_KEY`
 - Legacy MCP environment/config mode uses `TRON_PRIVATE_KEY` or config-file credentials
 - When local mode and private key mode both exist, local mode takes priority
 - Users do **not** need to configure any extra source-selection variable
