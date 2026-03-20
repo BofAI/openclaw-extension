@@ -30,7 +30,7 @@ OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
 GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
-AGENT_WALLET_VERSION="2.3.0-beta.2"
+AGENT_WALLET_VERSION="2.3.0-beta.3"
 AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
 TMPFILES=()
 TEMP_DIR=""
@@ -308,8 +308,6 @@ ensure_agent_wallet_cli() {
     local current_version=""
     local npm_list_output=""
 
-    # Detect installed version from npm metadata instead of CLI flags.
-    # Some agent-wallet versions do not support `--version`.
     if npm_list_output=$(npm list -g --depth=0 @bankofai/agent-wallet 2>/dev/null); then
         current_version=$(printf '%s\n' "$npm_list_output" | sed -n 's/.*@bankofai\/agent-wallet@\([^[:space:]]*\).*/\1/p' | head -n 1)
     fi
@@ -651,6 +649,13 @@ copy_skill() {
     if [ -f "$target_dir/$skill_id/package.json" ]; then
         echo -e "${MUTED}  Installing npm dependencies...${NC}"
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
+    fi
+
+    if [ "$skill_id" = "sunperp" ]; then
+        echo ""
+        echo -e "${WARN}sunperp depends on TRON_PRIVATE_KEY.${NC}"
+        echo -e "${MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${NC}"
+        echo ""
     fi
     
     # Special handling for x402-payment: configure gasfree API credentials
