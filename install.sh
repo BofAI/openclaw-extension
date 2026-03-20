@@ -30,8 +30,7 @@ OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
 GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
-AGENT_WALLET_VERSION="2.3.0-beta.3"
-AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
+AGENT_WALLET_VERSION="2.3.0-beta.4"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -258,9 +257,9 @@ run_clean_install() {
     echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
     echo ""
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
-    echo -e "  ${WARN}•${NC} AgentWallet local data: ${INFO}$AGENT_WALLET_DIR${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
+    echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override${NC}"
     echo ""
     echo -ne "${ERROR}?${NC} Continue with CLEAN install? ${MUTED}(y/N)${NC}: "
     read -r clean_confirm <&3
@@ -280,7 +279,6 @@ run_clean_install() {
 
     echo ""
     echo -e "${INFO}Running cleanup...${NC}"
-    rm -rf "$AGENT_WALLET_DIR"
     clear_all_mcp_entries
     clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
     clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
@@ -338,10 +336,6 @@ ensure_agent_wallet_cli() {
     fi
 }
 
-is_agent_wallet_initialized() {
-    AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet list >/dev/null 2>&1
-}
-
 setup_agent_wallet() {
     echo ""
     echo -e "${BOLD}Step 0: AgentWallet Setup${NC}"
@@ -349,28 +343,27 @@ setup_agent_wallet() {
 
     ensure_agent_wallet_cli
 
-    if is_agent_wallet_initialized; then
-        echo -e "${SUCCESS}✓ AgentWallet already initialized${NC}"
-        echo -e "${MUTED}  Path: $AGENT_WALLET_DIR${NC}"
-        echo -e "${MUTED}  Check command: agent-wallet list${NC}"
+    if [ "$CLEAN_INSTALL" = true ]; then
+        echo -e "${INFO}Launching: agent-wallet start --override${NC}"
+        echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""
-        return 0
+        if ! agent-wallet start --override; then
+            echo -e "${ERROR}AgentWallet initialization failed in CLEAN mode.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${INFO}Launching: agent-wallet start${NC}"
+        echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
+        echo ""
+        if ! agent-wallet start; then
+            echo -e "${ERROR}AgentWallet initialization failed.${NC}"
+            exit 1
+        fi
     fi
 
-    echo -e "${INFO}AgentWallet is not initialized yet.${NC}"
-    echo -e "${MUTED}Launching: agent-wallet start --save-runtime-secrets${NC}"
-    echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
     echo ""
-    if ! AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet start --save-runtime-secrets; then
-        echo -e "${ERROR}AgentWallet initialization failed.${NC}"
-        exit 1
-    fi
+    echo -e "${SUCCESS}✓ AgentWallet setup completed${NC}"
     echo ""
-
-    if ! is_agent_wallet_initialized; then
-        echo -e "${ERROR}AgentWallet still appears uninitialized after setup.${NC}"
-        exit 1
-    fi
 }
 
 # --- Multiselect Function ---
