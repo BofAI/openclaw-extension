@@ -108,6 +108,7 @@ The installer configures wallet usage through AgentWallet first:
 **AgentWallet initialization**
 - Installer checks with `agent-wallet list` and initializes with `agent-wallet start --save-runtime-secrets`
 - Detailed behavior and modes are documented in [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
+- Wallet directory defaults to `~/.agent-wallet`; override with `AGENT_WALLET_DIR=/your/path`
 
 **bnbchain-mcp Exception**
 - `bnbchain-mcp` currently requires `PRIVATE_KEY` and is not yet AgentWallet-compatible

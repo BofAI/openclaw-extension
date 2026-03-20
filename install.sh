@@ -31,6 +31,7 @@ OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
 GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
 AGENT_WALLET_VERSION="2.3.0-beta.2"
+AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -257,7 +258,7 @@ run_clean_install() {
     echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
     echo ""
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
-    echo -e "  ${WARN}•${NC} AgentWallet local data: ${INFO}$HOME/.agent-wallet${NC}"
+    echo -e "  ${WARN}•${NC} AgentWallet local data: ${INFO}$AGENT_WALLET_DIR${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
     echo ""
@@ -279,7 +280,7 @@ run_clean_install() {
 
     echo ""
     echo -e "${INFO}Running cleanup...${NC}"
-    rm -rf "$HOME/.agent-wallet"
+    rm -rf "$AGENT_WALLET_DIR"
     clear_all_mcp_entries
     clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
     clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
@@ -334,7 +335,7 @@ ensure_agent_wallet_cli() {
 }
 
 is_agent_wallet_initialized() {
-    agent-wallet list >/dev/null 2>&1
+    AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet list >/dev/null 2>&1
 }
 
 setup_agent_wallet() {
@@ -346,6 +347,7 @@ setup_agent_wallet() {
 
     if is_agent_wallet_initialized; then
         echo -e "${SUCCESS}✓ AgentWallet already initialized${NC}"
+        echo -e "${MUTED}  Path: $AGENT_WALLET_DIR${NC}"
         echo -e "${MUTED}  Check command: agent-wallet list${NC}"
         echo ""
         return 0
@@ -355,7 +357,7 @@ setup_agent_wallet() {
     echo -e "${MUTED}Launching: agent-wallet start --save-runtime-secrets${NC}"
     echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
     echo ""
-    if ! agent-wallet start --save-runtime-secrets; then
+    if ! AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet start --save-runtime-secrets; then
         echo -e "${ERROR}AgentWallet initialization failed.${NC}"
         exit 1
     fi
