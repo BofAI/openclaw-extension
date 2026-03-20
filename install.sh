@@ -306,9 +306,12 @@ choose_install_mode() {
 
 ensure_agent_wallet_cli() {
     local current_version=""
+    local npm_list_output=""
 
-    if command -v agent-wallet &> /dev/null; then
-        current_version=$(agent-wallet --version 2>/dev/null | head -n 1 | tr -d '\r' | sed 's/^v//')
+    # Detect installed version from npm metadata instead of CLI flags.
+    # Some agent-wallet versions do not support `--version`.
+    if npm_list_output=$(npm list -g --depth=0 @bankofai/agent-wallet 2>/dev/null); then
+        current_version=$(printf '%s\n' "$npm_list_output" | sed -n 's/.*@bankofai\/agent-wallet@\([^[:space:]]*\).*/\1/p' | head -n 1)
     fi
 
     if [ "$current_version" = "$AGENT_WALLET_VERSION" ]; then
@@ -327,7 +330,10 @@ ensure_agent_wallet_cli() {
         exit 1
     fi
 
-    current_version=$(agent-wallet --version 2>/dev/null | head -n 1 | tr -d '\r' | sed 's/^v//')
+    current_version=""
+    if npm_list_output=$(npm list -g --depth=0 @bankofai/agent-wallet 2>/dev/null); then
+        current_version=$(printf '%s\n' "$npm_list_output" | sed -n 's/.*@bankofai\/agent-wallet@\([^[:space:]]*\).*/\1/p' | head -n 1)
+    fi
     if [ "$current_version" != "$AGENT_WALLET_VERSION" ]; then
         echo -e "${ERROR}Error: Expected AgentWallet ${AGENT_WALLET_VERSION}, but got '${current_version:-unknown}'.${NC}"
         exit 1
