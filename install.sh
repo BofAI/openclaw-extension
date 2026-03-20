@@ -29,7 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.5.0.beta}"
 AGENT_WALLET_VERSION="2.3.0-beta.4"
 TMPFILES=()
 TEMP_DIR=""
@@ -259,6 +259,8 @@ run_clean_install() {
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
+    echo -e "  ${WARN}•${NC} x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
+    echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
     echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override${NC}"
     echo ""
     echo -ne "${ERROR}?${NC} Continue with CLEAN install? ${MUTED}(y/N)${NC}: "
@@ -282,6 +284,8 @@ run_clean_install() {
     clear_all_mcp_entries
     clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
     clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
+    rm -f "$HOME/.x402-config.json"
+    rm -f "$HOME/.mcporter/bankofai-config.json"
     echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
     echo ""
 }
@@ -290,7 +294,7 @@ choose_install_mode() {
     echo ""
     echo -e "${BOLD}Installation Mode${NC}"
     echo -e "  ${INFO}1)${NC} Normal install ${SUCCESS}[Recommended]${NC}"
-    echo -e "  ${INFO}2)${NC} Clean install ${WARN}(delete existing AgentWallet/MCP/skills first)${NC}"
+    echo -e "  ${INFO}2)${NC} Clean install ${WARN}(full cleanup: MCP/skills/local config files)${NC}"
     echo ""
     echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
     read -r install_mode_choice <&3
@@ -803,7 +807,7 @@ else
                  JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"],
+  "args": ["-y", "@bankofai/mcp-server-tron@1.1.7-beta"],
   "env": {
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
   }
