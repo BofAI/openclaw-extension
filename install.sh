@@ -30,7 +30,7 @@ OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
 GITHUB_BRANCH="${GITHUB_BRANCH:-v1.5.0.beta.1}"
-AGENT_WALLET_VERSION="2.3.0-beta.4"
+AGENT_WALLET_VERSION="2.3.0-beta.6"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
@@ -356,6 +356,11 @@ setup_agent_wallet() {
     ensure_agent_wallet_cli
 
     if [ "$CLEAN_INSTALL" = true ]; then
+        echo -e "${INFO}Launching: agent-wallet reset${NC}"
+        if ! run_agent_wallet_cli reset; then
+            echo -e "${WARN}AgentWallet reset skipped or failed; continuing with clean initialization.${NC}"
+        fi
+        echo ""
         echo -e "${INFO}Launching: agent-wallet start --override${NC}"
         echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""

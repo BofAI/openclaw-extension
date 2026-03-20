@@ -55,7 +55,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI v2.3.0-beta.4** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
+- **AgentWallet CLI v2.3.0-beta.6** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
