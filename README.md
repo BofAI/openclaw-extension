@@ -55,7 +55,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI** (installer can auto-install it when missing)
+- **AgentWallet CLI v2.3.0-beta.2** (installer enforces this version)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
@@ -83,10 +83,9 @@ The installer now runs in this order:
    - `Normal install` (default)
    - `Clean install` (deletes existing AgentWallet data, clears all MCP entries, and removes all installed skills before reinstalling)
 2. **AgentWallet setup**
-   - If local AgentWallet is already initialized, installer proceeds directly without asking for `AGENT_WALLET_PASSWORD`
-   - If not initialized, choose:
-     - `Local mode` (password-based local wallet)
-     - `Static mode` (`AGENT_WALLET_PRIVATE_KEY` or `AGENT_WALLET_MNEMONIC`; account index asked only for mnemonic)
+   - Installer checks initialization with `agent-wallet list`
+   - If not initialized, installer directly launches `agent-wallet start --save-runtime-secrets`
+   - Initialization prompts are handled by AgentWallet CLI itself
 3. **MCP and skills installation**
    - MCP/skills installation prompts stay focused on MCP/skill configuration itself
 
@@ -105,16 +104,10 @@ The installer now runs in this order:
 
 The installer configures wallet usage through AgentWallet first:
 
-**Option 1: Local mode**
-- Uses encrypted local wallet storage with password protection
-- If already initialized, installer reuses it directly
-- No private key prompt in MCP/skills setup flow
-
-**Option 2: Static mode**
-- Uses one of:
-  - `AGENT_WALLET_PRIVATE_KEY`
-  - `AGENT_WALLET_MNEMONIC`
-- `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` is only requested when mnemonic is selected
+**AgentWallet initialization**
+- Check command: `agent-wallet list`
+- Init command: `agent-wallet start --save-runtime-secrets`
+- Installer does not reimplement AgentWallet init prompts
 
 **bnbchain-mcp Exception**
 - `bnbchain-mcp` currently requires `PRIVATE_KEY` and is not yet AgentWallet-compatible

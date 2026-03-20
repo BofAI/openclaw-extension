@@ -30,14 +30,11 @@ OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
 GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
+AGENT_WALLET_VERSION="2.3.0-beta.2"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
-AGENT_WALLET_MODE=""
-AGENT_WALLET_PRIVATE_KEY=""
-AGENT_WALLET_MNEMONIC=""
-AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"
 AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
 
 # --- Cleanup ---
@@ -221,11 +218,6 @@ json_string_or_null() {
     fi
 }
 
-is_strong_password() {
-    local password="$1"
-    [[ ${#password} -ge 8 ]] && [[ "$password" =~ [A-Z] ]] && [[ "$password" =~ [a-z] ]] && [[ "$password" =~ [0-9] ]] && [[ "$password" =~ [^A-Za-z0-9] ]]
-}
-
 clear_all_mcp_entries() {
     mkdir -p "$MCP_CONFIG_DIR"
     MCP_FILE_PATH="$MCP_CONFIG_FILE" $PYTHON_CMD - <<'PY'
@@ -313,26 +305,37 @@ choose_install_mode() {
 }
 
 ensure_agent_wallet_cli() {
+    local current_version=""
+
     if command -v agent-wallet &> /dev/null; then
+        current_version=$(agent-wallet --version 2>/dev/null | head -n 1 | tr -d '\r' | sed 's/^v//')
+    fi
+
+    if [ "$current_version" = "$AGENT_WALLET_VERSION" ]; then
         return 0
     fi
 
-    echo -e "${INFO}Installing AgentWallet CLI...${NC}"
-    if ! npm install -g @bankofai/agent-wallet; then
-        echo -e "${ERROR}Error: Failed to install AgentWallet CLI.${NC}"
-        echo -e "${INFO}Try manually: npm install -g @bankofai/agent-wallet${NC}"
+    if [ -n "$current_version" ]; then
+        echo -e "${INFO}Updating AgentWallet CLI to ${AGENT_WALLET_VERSION}...${NC}"
+    else
+        echo -e "${INFO}Installing AgentWallet CLI ${AGENT_WALLET_VERSION}...${NC}"
+    fi
+
+    if ! npm install -g "@bankofai/agent-wallet@${AGENT_WALLET_VERSION}"; then
+        echo -e "${ERROR}Error: Failed to install AgentWallet CLI ${AGENT_WALLET_VERSION}.${NC}"
+        echo -e "${INFO}Try manually: npm install -g @bankofai/agent-wallet@${AGENT_WALLET_VERSION}${NC}"
         exit 1
     fi
 
-    if ! command -v agent-wallet &> /dev/null; then
-        echo -e "${ERROR}Error: agent-wallet command not found after installation.${NC}"
+    current_version=$(agent-wallet --version 2>/dev/null | head -n 1 | tr -d '\r' | sed 's/^v//')
+    if [ "$current_version" != "$AGENT_WALLET_VERSION" ]; then
+        echo -e "${ERROR}Error: Expected AgentWallet ${AGENT_WALLET_VERSION}, but got '${current_version:-unknown}'.${NC}"
         exit 1
     fi
 }
 
 is_agent_wallet_initialized() {
-    local wallet_dir="$AGENT_WALLET_DIR"
-    [ -d "$wallet_dir" ] && [ -f "$wallet_dir/master.json" ] && [ -f "$wallet_dir/wallets_config.json" ]
+    AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet list >/dev/null 2>&1
 }
 
 setup_agent_wallet() {
@@ -343,136 +346,27 @@ setup_agent_wallet() {
     ensure_agent_wallet_cli
 
     if is_agent_wallet_initialized; then
-        AGENT_WALLET_MODE="local"
         echo -e "${SUCCESS}✓ AgentWallet already initialized${NC}"
         echo -e "${MUTED}  Path: $AGENT_WALLET_DIR${NC}"
-        echo -e "${MUTED}  Continuing without asking for AGENT_WALLET_PASSWORD.${NC}"
+        echo -e "${MUTED}  Check command: agent-wallet list${NC}"
         echo ""
         return 0
     fi
 
-    echo -e "${INFO}AgentWallet is not initialized yet. Choose setup mode:${NC}"
-    echo -e "  ${INFO}1)${NC} Local mode ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Password-protected local wallet storage${NC}"
-    echo -e "  ${INFO}2)${NC} Static mode"
-    echo -e "     ${MUTED}Use AGENT_WALLET_PRIVATE_KEY or AGENT_WALLET_MNEMONIC${NC}"
+    echo -e "${INFO}AgentWallet is not initialized yet.${NC}"
+    echo -e "${MUTED}Launching: agent-wallet start --save-runtime-secrets${NC}"
+    echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
     echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
-    read -r wallet_mode_choice <&3
-    wallet_mode_choice=${wallet_mode_choice:-1}
+    if ! AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet start --save-runtime-secrets; then
+        echo -e "${ERROR}AgentWallet initialization failed.${NC}"
+        exit 1
+    fi
+    echo ""
 
-    case "$wallet_mode_choice" in
-        1)
-            AGENT_WALLET_MODE="local"
-            local pw1=""
-            local pw2=""
-
-            echo ""
-            echo -e "${BOLD}Local mode setup${NC}"
-            while true; do
-                echo -ne "${INFO}?${NC} Create AgentWallet password ${MUTED}(hidden)${NC}: "
-                read -rs pw1 <&3
-                echo ""
-                echo -ne "${INFO}?${NC} Confirm password ${MUTED}(hidden)${NC}: "
-                read -rs pw2 <&3
-                echo ""
-
-                if [ -z "$pw1" ]; then
-                    echo -e "${WARN}Password cannot be empty.${NC}"
-                    continue
-                fi
-                if [ "$pw1" != "$pw2" ]; then
-                    echo -e "${WARN}Passwords do not match. Please try again.${NC}"
-                    continue
-                fi
-                if ! is_strong_password "$pw1"; then
-                    echo -e "${WARN}Password must be 8+ chars and include uppercase, lowercase, number, and special character.${NC}"
-                    continue
-                fi
-                break
-            done
-
-            echo ""
-            echo -e "${INFO}Launching AgentWallet initialization...${NC}"
-            echo -e "${MUTED}Follow the prompts to import your wallet credential.${NC}"
-            if ! agent-wallet start -p "$pw1"; then
-                echo -e "${WARN}Retrying initialization with default wallet type...${NC}"
-                if ! agent-wallet start -p "$pw1" -i tron; then
-                    echo -e "${ERROR}AgentWallet initialization failed.${NC}"
-                    exit 1
-                fi
-            fi
-            echo ""
-            ;;
-        2)
-            echo ""
-            echo -e "${BOLD}Static mode setup${NC}"
-            echo -e "  ${INFO}1)${NC} AGENT_WALLET_PRIVATE_KEY ${SUCCESS}[Recommended]${NC}"
-            echo -e "  ${INFO}2)${NC} AGENT_WALLET_MNEMONIC"
-            echo ""
-            echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
-            read -r static_choice <&3
-            static_choice=${static_choice:-1}
-
-            case "$static_choice" in
-                1)
-                    AGENT_WALLET_MODE="static_private_key"
-                    while true; do
-                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_PRIVATE_KEY ${MUTED}(hidden)${NC}: "
-                        read -rs AGENT_WALLET_PRIVATE_KEY <&3
-                        echo ""
-                        if [ -n "$AGENT_WALLET_PRIVATE_KEY" ]; then
-                            break
-                        fi
-                        echo -e "${WARN}AGENT_WALLET_PRIVATE_KEY cannot be empty.${NC}"
-                    done
-                    ;;
-                2)
-                    AGENT_WALLET_MODE="static_mnemonic"
-                    while true; do
-                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_MNEMONIC ${MUTED}(hidden)${NC}: "
-                        read -rs AGENT_WALLET_MNEMONIC <&3
-                        echo ""
-                        if [ -n "$AGENT_WALLET_MNEMONIC" ]; then
-                            break
-                        fi
-                        echo -e "${WARN}AGENT_WALLET_MNEMONIC cannot be empty.${NC}"
-                    done
-
-                    echo -ne "${INFO}?${NC} Enter AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX ${MUTED}(optional, default: 0)${NC}: "
-                    read -r AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX <&3
-                    AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX=${AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX:-0}
-                    if [[ ! "$AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX" =~ ^[0-9]+$ ]]; then
-                        echo -e "${WARN}Invalid account index. Using default 0.${NC}"
-                        AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX="0"
-                    fi
-                    ;;
-                *)
-                    echo -e "${WARN}Invalid choice, using private key mode.${NC}"
-                    AGENT_WALLET_MODE="static_private_key"
-                    while true; do
-                        echo -ne "${INFO}?${NC} Enter AGENT_WALLET_PRIVATE_KEY ${MUTED}(hidden)${NC}: "
-                        read -rs AGENT_WALLET_PRIVATE_KEY <&3
-                        echo ""
-                        if [ -n "$AGENT_WALLET_PRIVATE_KEY" ]; then
-                            break
-                        fi
-                        echo -e "${WARN}AGENT_WALLET_PRIVATE_KEY cannot be empty.${NC}"
-                    done
-                    ;;
-            esac
-            echo ""
-            ;;
-        *)
-            echo -e "${WARN}Invalid choice, defaulting to local mode.${NC}"
-            AGENT_WALLET_MODE="local"
-            if ! agent-wallet start; then
-                echo -e "${ERROR}AgentWallet initialization failed.${NC}"
-                exit 1
-            fi
-            echo ""
-            ;;
-    esac
+    if ! is_agent_wallet_initialized; then
+        echo -e "${ERROR}AgentWallet still appears uninitialized after setup.${NC}"
+        exit 1
+    fi
 }
 
 # --- Multiselect Function ---
@@ -893,26 +787,13 @@ else
                  echo -e "${MUTED}Saving configuration...${NC}"
 
                  TRON_API_KEY_VAL=$(json_string_or_null "$TRON_API_KEY")
-                 AGENT_WALLET_PRIVATE_KEY_VAL="null"
-                 AGENT_WALLET_MNEMONIC_VAL="null"
-                 AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL="null"
-
-                 if [ "$AGENT_WALLET_MODE" = "static_private_key" ]; then
-                     AGENT_WALLET_PRIVATE_KEY_VAL=$(json_string_or_null "$AGENT_WALLET_PRIVATE_KEY")
-                 elif [ "$AGENT_WALLET_MODE" = "static_mnemonic" ]; then
-                     AGENT_WALLET_MNEMONIC_VAL=$(json_string_or_null "$AGENT_WALLET_MNEMONIC")
-                     AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL=$(json_string_or_null "$AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX")
-                 fi
 
                  JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
   "args": ["-y", "@bankofai/mcp-server-tron"],
   "env": {
-    "TRONGRID_API_KEY": $TRON_API_KEY_VAL,
-    "AGENT_WALLET_PRIVATE_KEY": $AGENT_WALLET_PRIVATE_KEY_VAL,
-    "AGENT_WALLET_MNEMONIC": $AGENT_WALLET_MNEMONIC_VAL,
-    "AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX": $AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX_VAL
+    "TRONGRID_API_KEY": $TRON_API_KEY_VAL
   }
 }
 EOF

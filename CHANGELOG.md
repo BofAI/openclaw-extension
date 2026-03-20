@@ -5,6 +5,14 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.17] - 2026-03-20
+
+### Changed
+- **Pinned AgentWallet Version**: Installer now enforces `@bankofai/agent-wallet@2.3.0-beta.2`.
+- **Initialization Detection**: AgentWallet initialization is now detected via `agent-wallet list`.
+- **Initialization Flow**: For uninitialized environments, installer now directly runs `agent-wallet start --save-runtime-secrets` and relies on AgentWallet CLI prompts instead of reimplementing setup prompts in `install.sh`.
+- **TRON MCP Config Simplification**: Removed installer-managed `AGENT_WALLET_*` injection from `mcp-server-tron` config flow; only network key prompts remain in MCP setup.
+
 ## [1.2.16] - 2026-03-20
 
 ### Added
