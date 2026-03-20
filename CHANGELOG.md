@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clean Install Mode**: Added an optional destructive clean install flow that:
   - clears all MCP entries under `~/.mcporter/mcporter.json`
   - removes all installed skills under `~/.openclaw/skills` and `.openclaw/skills`
-  - runs `agent-wallet start --override` for wallet reset
+  - runs `agent-wallet start --override --save-runtime-secrets` for wallet reset
   - requires explicit high-visibility confirmation plus typing `CLEAN`
 
 ### Changed
@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Skill Setup Prompts**: Removed SunSwap private-key setup reminders from the skills installation flow.
 - **Pinned AgentWallet Version**: Installer now enforces `@bankofai/agent-wallet@2.3.0-beta.7`.
 - **Initialization Flow**: Installer now always delegates initialization to AgentWallet CLI:
-  - `agent-wallet start` in normal mode
-  - `agent-wallet start --override` in clean mode
+  - `agent-wallet start --save-runtime-secrets` in normal mode
+  - `agent-wallet start --override --save-runtime-secrets` in clean mode
 - **TRON MCP Config Simplification**: Removed installer-managed `AGENT_WALLET_*` injection from `mcp-server-tron` config flow; only network key prompts remain in MCP setup.
 
 ## [1.2.14] - 2026-03-15

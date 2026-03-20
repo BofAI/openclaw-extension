@@ -261,7 +261,7 @@ run_clean_install() {
     echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
     echo -e "  ${WARN}•${NC} x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
     echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
-    echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override${NC}"
+    echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override --save-runtime-secrets${NC}"
     echo ""
     echo -ne "${ERROR}?${NC} Continue with CLEAN install? ${MUTED}(y/N)${NC}: "
     read -r clean_confirm <&3
@@ -361,18 +361,18 @@ setup_agent_wallet() {
             echo -e "${WARN}AgentWallet reset skipped or failed; continuing with clean initialization.${NC}"
         fi
         echo ""
-        echo -e "${INFO}Launching: agent-wallet start --override${NC}"
+        echo -e "${INFO}Launching: agent-wallet start --override --save-runtime-secrets${NC}"
         echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""
-        if ! run_agent_wallet_cli start --override; then
+        if ! run_agent_wallet_cli start --override --save-runtime-secrets; then
             echo -e "${ERROR}AgentWallet initialization failed in CLEAN mode.${NC}"
             exit 1
         fi
     else
-        echo -e "${INFO}Launching: agent-wallet start${NC}"
+        echo -e "${INFO}Launching: agent-wallet start --save-runtime-secrets${NC}"
         echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""
-        if ! run_agent_wallet_cli start; then
+        if ! run_agent_wallet_cli start --save-runtime-secrets; then
             echo -e "${ERROR}AgentWallet initialization failed.${NC}"
             exit 1
         fi

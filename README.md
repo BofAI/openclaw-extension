@@ -83,8 +83,8 @@ The installer now runs in this order:
    - `Normal install` (default)
    - `Clean install` (deletes existing AgentWallet data, clears all MCP entries, and removes all installed skills before reinstalling)
 2. **AgentWallet setup**
-   - `Normal install` runs `agent-wallet start`
-   - `Clean install` runs `agent-wallet start --override`
+   - `Normal install` runs `agent-wallet start --save-runtime-secrets`
+   - `Clean install` runs `agent-wallet start --override --save-runtime-secrets`
    - Initialization prompts are handled by AgentWallet CLI itself
    - For AgentWallet mode details, see [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
 3. **MCP and skills installation**
@@ -106,8 +106,8 @@ The installer now runs in this order:
 The installer configures wallet usage through AgentWallet first:
 
 **AgentWallet initialization**
-- Installer launches `agent-wallet start` in normal mode
-- Installer launches `agent-wallet start --override` in clean mode
+- Installer launches `agent-wallet start --save-runtime-secrets` in normal mode
+- Installer launches `agent-wallet start --override --save-runtime-secrets` in clean mode
 - Detailed behavior and modes are documented in [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
 
 **bnbchain-mcp Exception**
