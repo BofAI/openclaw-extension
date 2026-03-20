@@ -336,6 +336,14 @@ ensure_agent_wallet_cli() {
     fi
 }
 
+run_agent_wallet_cli() {
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        agent-wallet "$@" </dev/tty >/dev/tty 2>&1
+    else
+        agent-wallet "$@"
+    fi
+}
+
 setup_agent_wallet() {
     echo ""
     echo -e "${BOLD}Step 0: AgentWallet Setup${NC}"
@@ -347,7 +355,7 @@ setup_agent_wallet() {
         echo -e "${INFO}Launching: agent-wallet start --override${NC}"
         echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""
-        if ! agent-wallet start --override; then
+        if ! run_agent_wallet_cli start --override; then
             echo -e "${ERROR}AgentWallet initialization failed in CLEAN mode.${NC}"
             exit 1
         fi
@@ -355,7 +363,7 @@ setup_agent_wallet() {
         echo -e "${INFO}Launching: agent-wallet start${NC}"
         echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
         echo ""
-        if ! agent-wallet start; then
+        if ! run_agent_wallet_cli start; then
             echo -e "${ERROR}AgentWallet initialization failed.${NC}"
             exit 1
         fi
