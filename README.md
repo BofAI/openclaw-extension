@@ -55,7 +55,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI v2.3.0-beta.2** (installer enforces this version)
+- **AgentWallet CLI v2.3.0-beta.2** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
@@ -86,6 +86,7 @@ The installer now runs in this order:
    - Installer checks initialization with `agent-wallet list`
    - If not initialized, installer directly launches `agent-wallet start --save-runtime-secrets`
    - Initialization prompts are handled by AgentWallet CLI itself
+   - For AgentWallet mode details, see [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
 3. **MCP and skills installation**
    - MCP/skills installation prompts stay focused on MCP/skill configuration itself
 
@@ -105,9 +106,8 @@ The installer now runs in this order:
 The installer configures wallet usage through AgentWallet first:
 
 **AgentWallet initialization**
-- Check command: `agent-wallet list`
-- Init command: `agent-wallet start --save-runtime-secrets`
-- Installer does not reimplement AgentWallet init prompts
+- Installer checks with `agent-wallet list` and initializes with `agent-wallet start --save-runtime-secrets`
+- Detailed behavior and modes are documented in [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
 
 **bnbchain-mcp Exception**
 - `bnbchain-mcp` currently requires `PRIVATE_KEY` and is not yet AgentWallet-compatible

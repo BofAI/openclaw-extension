@@ -35,7 +35,6 @@ TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
-AGENT_WALLET_DIR="${AGENT_WALLET_DIR:-$HOME/.agent-wallet}"
 
 # --- Cleanup ---
 cleanup() {
@@ -335,7 +334,7 @@ ensure_agent_wallet_cli() {
 }
 
 is_agent_wallet_initialized() {
-    AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet list >/dev/null 2>&1
+    agent-wallet list >/dev/null 2>&1
 }
 
 setup_agent_wallet() {
@@ -347,7 +346,6 @@ setup_agent_wallet() {
 
     if is_agent_wallet_initialized; then
         echo -e "${SUCCESS}✓ AgentWallet already initialized${NC}"
-        echo -e "${MUTED}  Path: $AGENT_WALLET_DIR${NC}"
         echo -e "${MUTED}  Check command: agent-wallet list${NC}"
         echo ""
         return 0
@@ -357,7 +355,7 @@ setup_agent_wallet() {
     echo -e "${MUTED}Launching: agent-wallet start --save-runtime-secrets${NC}"
     echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
     echo ""
-    if ! AGENT_WALLET_DIR="$AGENT_WALLET_DIR" agent-wallet start --save-runtime-secrets; then
+    if ! agent-wallet start --save-runtime-secrets; then
         echo -e "${ERROR}AgentWallet initialization failed.${NC}"
         exit 1
     fi
