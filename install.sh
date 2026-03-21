@@ -393,6 +393,7 @@ multiselect() {
     local current=0
     local i
     local term_cols=80
+    local desc_lines=4
 
     if command -v tput &> /dev/null; then
         term_cols=$(tput cols 2>/dev/null || echo 80)
@@ -408,12 +409,15 @@ multiselect() {
     for ((i=0; i<${#options[@]}; i++)); do
         echo ""
     done
+    for ((i=0; i<${desc_lines}; i++)); do
+        echo ""
+    done
 
     tput civis # Hide cursor
 
     while true; do
         # Move cursor up to start of list
-        tput cuu ${#options[@]}
+        tput cuu $((${#options[@]} + desc_lines))
 
         for ((i=0; i<${#options[@]}; i++)); do
             tput el # Clear line
@@ -421,13 +425,20 @@ multiselect() {
             local checkbox="[ ]"
             local color="$NC"
             local pointer="  "
-            local line="${options[i]}"
+            local raw="${options[i]}"
+            local name="$raw"
+            local desc=""
             local max_len=$((term_cols - 6))
 
+            if [[ "$raw" == *"||"* ]]; then
+                name="${raw%%||*}"
+                desc="${raw#*||}"
+            fi
+
             # Normalize whitespace and truncate to prevent terminal wrapping.
-            line=$(echo "$line" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')
-            if [ ${#line} -gt $max_len ]; then
-                line="${line:0:$max_len}"
+            name=$(echo "$name" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')
+            if [ ${#name} -gt $max_len ]; then
+                name="${name:0:$max_len}"
             fi
 
             if [ "${selected[i]}" = true ]; then
@@ -445,7 +456,32 @@ multiselect() {
                 fi
             fi
 
-            echo -e "${pointer}${checkbox} ${color}${line}${NC}"
+            echo -e "${pointer}${checkbox} ${color}${name}${NC}"
+        done
+
+        # Details panel for current selection (if provided)
+        tput el
+        echo -e "${MUTED}Details:${NC}"
+        local current_raw="${options[$current]}"
+        local current_desc=""
+        if [[ "$current_raw" == *"||"* ]]; then
+            current_desc="${current_raw#*||}"
+        fi
+
+        local wrapped=()
+        if [ -n "$current_desc" ]; then
+            while IFS= read -r line; do
+                wrapped+=("$line")
+            done < <(printf '%s' "$current_desc" | fold -s -w "$term_cols")
+        fi
+
+        for ((i=0; i<${desc_lines}-1; i++)); do
+            tput el
+            local line="${wrapped[$i]:-}"
+            if [ $i -eq $((desc_lines - 2)) ] && [ ${#wrapped[@]} -gt $((desc_lines - 1)) ]; then
+                line="${line}..."
+            fi
+            echo -e "${MUTED}${line}${NC}"
         done
 
         # Read Input
@@ -963,7 +999,7 @@ else
             fi
             
             SKILL_IDS+=("$skill_name")
-            SKILL_OPTIONS+=("$skill_label - $description")
+            SKILL_OPTIONS+=("$skill_label||$description")
         fi
     done
 
