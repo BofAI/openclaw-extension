@@ -5,6 +5,14 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-03-21
+
+### Summary
+- **Normal install**: keeps existing MCP/skills/config and just walks you through AgentWallet setup first.
+- **Clean install**: wipes MCP entries, skills, and local config files, then re-initializes AgentWallet after an explicit confirmation.
+- **Wallet handling**: AgentWallet is the unified local signing wallet (no private keys stored in this installer); `bnbchain-mcp` still uses `PRIVATE_KEY`, and sunperp requires `TRON_PRIVATE_KEY`.
+- **Defaults pinned**: AgentWallet `2.3.0`, skills `v1.5.0`, `mcp-server-tron@1.1.7`.
+
 ## [1.2.14] - 2026-03-15
 
 ### Changed

@@ -29,10 +29,12 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
 OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
 GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.4.13}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-v1.5.0}"
+AGENT_WALLET_VERSION="2.3.0"
 TMPFILES=()
 TEMP_DIR=""
 INSTALLED_SKILLS=()
+CLEAN_INSTALL=false
 
 # --- Cleanup ---
 cleanup() {
@@ -206,6 +208,181 @@ ask_input() {
     printf -v "$var_name" '%s' "$input_val"
 }
 
+json_string_or_null() {
+    local value="${1:-}"
+    if [ -z "$value" ]; then
+        echo "null"
+    else
+        printf '%s' "$value" | $PYTHON_CMD -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
+    fi
+}
+
+clear_all_mcp_entries() {
+    mkdir -p "$MCP_CONFIG_DIR"
+    MCP_FILE_PATH="$MCP_CONFIG_FILE" $PYTHON_CMD - <<'PY'
+import json
+import os
+
+path = os.environ["MCP_FILE_PATH"]
+data = {}
+
+if os.path.exists(path):
+    try:
+        with open(path, "r") as f:
+            content = f.read().strip()
+            if content:
+                data = json.loads(content)
+    except Exception:
+        data = {}
+
+data["mcpServers"] = {}
+
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+PY
+}
+
+clear_all_skills_under_dir() {
+    local skills_dir="$1"
+    if [ -d "$skills_dir" ]; then
+        find "$skills_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    fi
+}
+
+run_clean_install() {
+    echo ""
+    echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!                    CLEAN INSTALL MODE                    !!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!                  THIS ACTION IS IRREVERSIBLE             !!!${NC}"
+    echo -e "${ERROR}${BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${NC}"
+    echo ""
+    echo -e "${WARN}The following data will be permanently deleted:${NC}"
+    echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
+    echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
+    echo -e "  ${WARN}•${NC} x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
+    echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
+    echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override --save-runtime-secrets${NC}"
+    echo ""
+    echo -ne "${ERROR}?${NC} Continue with CLEAN install? ${MUTED}(y/N)${NC}: "
+    read -r clean_confirm <&3
+    if [[ ! "$clean_confirm" =~ ^[Yy]$ ]]; then
+        echo -e "${MUTED}Clean install cancelled.${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -ne "${ERROR}?${NC} Type ${BOLD}CLEAN${NC}${ERROR} to confirm permanent deletion${NC}: "
+    read -r clean_word <&3
+    if [ "$clean_word" != "CLEAN" ]; then
+        echo -e "${WARN}Confirmation text mismatch. Clean install cancelled.${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo ""
+    echo -e "${INFO}Running cleanup...${NC}"
+    clear_all_mcp_entries
+    clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
+    clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
+    rm -f "$HOME/.x402-config.json"
+    rm -f "$HOME/.mcporter/bankofai-config.json"
+    echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
+    echo ""
+}
+
+choose_install_mode() {
+    echo ""
+    echo -e "${BOLD}Installation Mode${NC}"
+    echo -e "  ${INFO}1)${NC} Normal install ${SUCCESS}[Recommended]${NC}"
+    echo -e "  ${INFO}2)${NC} Clean install ${WARN}(full cleanup: MCP/skills/local config files)${NC}"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
+    read -r install_mode_choice <&3
+    install_mode_choice=${install_mode_choice:-1}
+
+    if [ "$install_mode_choice" = "2" ]; then
+        CLEAN_INSTALL=true
+        run_clean_install
+    fi
+}
+
+ensure_agent_wallet_cli() {
+    local current_version=""
+    local npm_list_output=""
+
+    if npm_list_output=$(npm list -g --depth=0 @bankofai/agent-wallet 2>/dev/null); then
+        current_version=$(printf '%s\n' "$npm_list_output" | sed -n 's/.*@bankofai\/agent-wallet@\([^[:space:]]*\).*/\1/p' | head -n 1)
+    fi
+
+    if [ "$current_version" = "$AGENT_WALLET_VERSION" ]; then
+        return 0
+    fi
+
+    if [ -n "$current_version" ]; then
+        echo -e "${INFO}Updating AgentWallet CLI to ${AGENT_WALLET_VERSION}...${NC}"
+    else
+        echo -e "${INFO}Installing AgentWallet CLI ${AGENT_WALLET_VERSION}...${NC}"
+    fi
+
+    if ! npm install -g "@bankofai/agent-wallet@${AGENT_WALLET_VERSION}"; then
+        echo -e "${ERROR}Error: Failed to install AgentWallet CLI ${AGENT_WALLET_VERSION}.${NC}"
+        echo -e "${INFO}Try manually: npm install -g @bankofai/agent-wallet@${AGENT_WALLET_VERSION}${NC}"
+        exit 1
+    fi
+
+    current_version=""
+    if npm_list_output=$(npm list -g --depth=0 @bankofai/agent-wallet 2>/dev/null); then
+        current_version=$(printf '%s\n' "$npm_list_output" | sed -n 's/.*@bankofai\/agent-wallet@\([^[:space:]]*\).*/\1/p' | head -n 1)
+    fi
+    if [ "$current_version" != "$AGENT_WALLET_VERSION" ]; then
+        echo -e "${ERROR}Error: Expected AgentWallet ${AGENT_WALLET_VERSION}, but got '${current_version:-unknown}'.${NC}"
+        exit 1
+    fi
+}
+
+run_agent_wallet_cli() {
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        agent-wallet "$@" </dev/tty >/dev/tty 2>&1
+    else
+        agent-wallet "$@"
+    fi
+}
+
+setup_agent_wallet() {
+    echo ""
+    echo -e "${BOLD}Step 0: AgentWallet Setup${NC}"
+    echo ""
+
+    ensure_agent_wallet_cli
+
+    if [ "$CLEAN_INSTALL" = true ]; then
+        echo -e "${INFO}Launching: agent-wallet reset${NC}"
+        if ! run_agent_wallet_cli reset; then
+            echo -e "${WARN}AgentWallet reset skipped or failed; continuing with clean initialization.${NC}"
+        fi
+        echo ""
+        echo -e "${INFO}Launching: agent-wallet start --override --save-runtime-secrets${NC}"
+        echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
+        echo ""
+        if ! run_agent_wallet_cli start --override --save-runtime-secrets; then
+            echo -e "${ERROR}AgentWallet initialization failed in CLEAN mode.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${INFO}Launching: agent-wallet start --save-runtime-secrets${NC}"
+        echo -e "${MUTED}Please complete initialization in the CLI prompts.${NC}"
+        echo ""
+        if ! run_agent_wallet_cli start --save-runtime-secrets; then
+            echo -e "${ERROR}AgentWallet initialization failed.${NC}"
+            exit 1
+        fi
+    fi
+
+    echo ""
+    echo -e "${SUCCESS}✓ AgentWallet setup completed${NC}"
+    echo ""
+}
+
 # --- Multiselect Function ---
 multiselect() {
     local prompt="$1"
@@ -215,30 +392,65 @@ multiselect() {
     local selected=()
     local current=0
     local i
+    local term_cols=80
+    local previous_frame_lines=0
+    local indent="      "
+
+    if [ -r /dev/tty ] && command -v stty &> /dev/null; then
+        local had_errexit=0
+        case "$-" in *e*) had_errexit=1 ;; esac
+        if [ $had_errexit -eq 1 ]; then set +e; fi
+        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}')
+        if [ -z "$term_cols" ]; then
+            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
+        fi
+        if [ $had_errexit -eq 1 ]; then set -e; fi
+    fi
+    if ! [[ "$term_cols" =~ ^[0-9]+$ ]]; then
+        term_cols=0
+    fi
+    if [ "$term_cols" -lt 20 ] && command -v tput &> /dev/null; then
+        term_cols=$(tput cols 2>/dev/null || echo 80)
+    fi
+    if ! [[ "$term_cols" =~ ^[0-9]+$ ]] || [ "$term_cols" -lt 20 ]; then
+        term_cols=80
+    fi
 
     # Initialize selection - all selected by default
     for ((i=0; i<${#options[@]}; i++)); do
         selected[i]=true
     done
 
-    # Prepare screen area
     echo -e "${INFO}?${NC} ${BOLD}$prompt${NC} ${MUTED}(Space:toggle, Enter:confirm)${NC}"
-    for ((i=0; i<${#options[@]}; i++)); do
-        echo ""
-    done
 
     tput civis # Hide cursor
 
     while true; do
-        # Move cursor up to start of list
-        tput cuu ${#options[@]}
+        if [ $previous_frame_lines -gt 0 ]; then
+            tput cuu ${previous_frame_lines}
+        fi
+        tput ed
+
+        local frame_lines=0
 
         for ((i=0; i<${#options[@]}; i++)); do
-            tput el # Clear line
-
             local checkbox="[ ]"
             local color="$NC"
             local pointer="  "
+            local raw="${options[i]}"
+            local name="$raw"
+            local desc=""
+            local max_len=$((term_cols - 6))
+
+            if [[ "$raw" == *"||"* ]]; then
+                name="${raw%%||*}"
+                desc="${raw#*||}"
+            fi
+
+            name=$(echo "$name" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')
+            if [ ${#name} -gt $max_len ]; then
+                name="${name:0:$max_len}"
+            fi
 
             if [ "${selected[i]}" = true ]; then
                 checkbox="${SUCCESS}[x]${NC}"
@@ -255,8 +467,23 @@ multiselect() {
                 fi
             fi
 
-            echo -e "${pointer}${checkbox} ${color}${options[i]}${NC}"
+            echo -e "${pointer}${checkbox} ${color}${name}${NC}"
+            frame_lines=$((frame_lines + 1))
+
+            if [ $i -eq $current ] && [ -n "$desc" ]; then
+                local wrapped=()
+                while IFS= read -r line || [ -n "$line" ]; do
+                    wrapped+=("$line")
+                done < <(printf '%s' "$desc" | fold -s -w $((term_cols - ${#indent} - 1)))
+
+                for line in "${wrapped[@]}"; do
+                    echo -e "${MUTED}${indent}${line}${NC}"
+                    frame_lines=$((frame_lines + 1))
+                done
+            fi
         done
+
+        previous_frame_lines=$frame_lines
 
         # Read Input
         local key=""
@@ -483,38 +710,14 @@ copy_skill() {
         echo -e "${MUTED}  Installing npm dependencies...${NC}"
         (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
     fi
-    
-    # Special handling for sunswap: remind about private key
-    if [ "$skill_id" = "sunswap" ]; then
+
+    if [ "$skill_id" = "sunperp" ]; then
         echo ""
-        echo -e "${BOLD}SunSwap Private Key Configuration${NC}"
-        echo -e "${MUTED}SunSwap scripts need a private key for swap operations${NC}"
-        echo ""
-        
-        # Check if key already exists
-        local key_file="$HOME/.clawdbot/wallets/.deployer_pk"
-        local has_env_key=false
-        
-        if [ -n "${TRON_PRIVATE_KEY:-}" ] || [ -n "${PRIVATE_KEY:-}" ]; then
-            has_env_key=true
-        fi
-        
-        if [ -f "$key_file" ] || [ "$has_env_key" = true ]; then
-            echo -e "${SUCCESS}✓ Private key already configured${NC}"
-            if [ -f "$key_file" ]; then
-                echo -e "${MUTED}  Found at: $key_file${NC}"
-            fi
-            if [ "$has_env_key" = true ]; then
-                echo -e "${MUTED}  Found in environment variable${NC}"
-            fi
-        else
-            echo -e "${INFO}Configure private key using one of these methods:${NC}"
-            echo -e "${MUTED}  1. File: echo \"your_key\" > ~/.clawdbot/wallets/.deployer_pk && chmod 600 ~/.clawdbot/wallets/.deployer_pk${NC}"
-            echo -e "${MUTED}  2. Env:  export TRON_PRIVATE_KEY=\"your_key\"${NC}"
-        fi
+        echo -e "${WARN}sunperp depends on TRON_PRIVATE_KEY.${NC}"
+        echo -e "${MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${NC}"
         echo ""
     fi
-
+    
     # Special handling for x402-payment: configure gasfree API credentials
     if [ "$skill_id" = "x402-payment" ]; then
         echo ""
@@ -610,7 +813,11 @@ check_env
 # Ensure config directory exists
 mkdir -p "$MCP_CONFIG_DIR"
 
-# npx clawhub install --force mcporter
+# Choose installation mode (Normal / Clean)
+choose_install_mode
+
+# Step 0: AgentWallet setup
+setup_agent_wallet
 
 # --- Step 1: MCP Server Configuration ---
 
@@ -619,9 +826,9 @@ echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
 echo ""
 
 SERVER_OPTIONS=(
-    "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
-    "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
-    "bankofai-recharge - BANK OF AI recharge MCP (remote recharge tools)"
+    "mcp-server-tron||Interact with TRON blockchain (wallets, transactions, smart contracts)."
+    "bnbchain-mcp||BNB Chain official MCP (BSC, opBNB, Ethereum, Greenfield)."
+    "bankofai-recharge||BANK OF AI recharge MCP (remote recharge tools)."
 )
 SERVER_IDS=(
     "mcp-server-tron"
@@ -646,72 +853,30 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
-                 echo ""
-                 
-                 # Ask for credential storage method
-                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
-                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
-                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
-                 echo -e "  ${INFO}2)${NC} Use environment variables"
-                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
-                 echo ""
-                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
-                 
-                 read -r cred_choice <&3
-                 cred_choice=${cred_choice:-2}
-                 
-                 echo ""
-                 
-                 if [ "$cred_choice" = "1" ]; then
-                     # Store in config file
-                     ask_input "Enter TRON_PRIVATE_KEY" TRON_KEY 1 "Your TRON wallet private key. Required for signing transactions."
-                     ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Your TronGrid API Key. Required for reliable network access."
+                 echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
+                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Optional but recommended for reliable network access."
+                 echo -e "${MUTED}Saving configuration...${NC}"
 
-                     echo -e "${MUTED}Saving configuration...${NC}"
+                 TRON_API_KEY_VAL=$(json_string_or_null "$TRON_API_KEY")
 
-                     TRON_KEY_VAL="\"$TRON_KEY\""
-                     if [ -z "$TRON_KEY" ]; then TRON_KEY_VAL="null"; fi
-
-                     TRON_API_KEY_VAL="\"$TRON_API_KEY\""
-                     if [ -z "$TRON_API_KEY" ]; then TRON_API_KEY_VAL="null"; fi
-
-                     JSON_PAYLOAD=$(cat <<EOF
+                 JSON_PAYLOAD=$(cat <<EOF
 {
   "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"],
+  "args": ["-y", "@bankofai/mcp-server-tron@1.1.7"],
   "env": {
-    "TRON_PRIVATE_KEY": $TRON_KEY_VAL,
     "TRONGRID_API_KEY": $TRON_API_KEY_VAL
   }
 }
 EOF
 )
-                 else
-                     # Use environment variables
-                     echo -e "${INFO}Using environment variables for credentials.${NC}"
-                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
-                     echo ""
-                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
-                     echo -e "${MUTED}export TRON_PRIVATE_KEY=\"your_private_key_here\"${NC}"
-                     echo -e "${MUTED}export TRONGRID_API_KEY=\"your_api_key_here\"${NC}"
-                     echo ""
-                     
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron"]
-}
-EOF
-)
-                 fi
-                 
+
                  write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
             
             "bnbchain-mcp")
+                 echo -e "${WARN}bnbchain-mcp currently does not support AgentWallet.${NC}"
+                 echo -e "${WARN}This server still uses PRIVATE_KEY configuration.${NC}"
+                 echo ""
                  echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
                  echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
                  echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
@@ -829,13 +994,13 @@ else
             if [ -z "$description" ] || [ "$description" = "---" ]; then
                 description=$(grep "^description:" "$dir/SKILL.md" 2>/dev/null | head -n 1 | sed 's/^description: *//' || echo "")
             fi
-            
+
             if [ -z "$description" ]; then
                 description="TRON skill"
             fi
-            
+
             SKILL_IDS+=("$skill_name")
-            SKILL_OPTIONS+=("$skill_label - $description")
+            SKILL_OPTIONS+=("$skill_label||$description")
         fi
     done
 

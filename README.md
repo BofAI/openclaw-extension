@@ -55,7 +55,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **Node.js** (v18+)
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **TRON Wallet** (Private Key & API Key for TRON network interaction)
+- **AgentWallet CLI v2.3.0** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
@@ -75,6 +75,21 @@ cd openclaw-extension
 ./install.sh
 ```
 
+### Installer Flow
+
+The installer now runs in this order:
+
+1. **Installation mode selection**
+   - `Normal install` (default)
+   - `Clean install` (deletes existing AgentWallet data, clears all MCP entries, and removes all installed skills before reinstalling)
+2. **AgentWallet setup**
+   - `Normal install` runs `agent-wallet start --save-runtime-secrets`
+   - `Clean install` runs `agent-wallet start --override --save-runtime-secrets`
+   - Initialization prompts are handled by AgentWallet CLI itself
+   - For AgentWallet mode details, see [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
+3. **MCP and skills installation**
+   - MCP/skills installation prompts stay focused on MCP/skill configuration itself
+
 ### What Gets Installed
 
 - ✅ **MCP servers** - TRON, BSC, and optional BANK OF AI recharge MCP entries configured in `~/.mcporter/mcporter.json`
@@ -82,32 +97,21 @@ cd openclaw-extension
 - ✅ **Available components**: See [mcp-server-tron](https://github.com/bankofai/mcp-server-tron), [bnbchain-mcp](https://github.com/bnb-chain/bnbchain-mcp), `bankofai-recharge` (`https://recharge.bankofai.io/mcp`), and [skills repository](https://github.com/BofAI/skills)
 
 **Note**: This installer uses `mcporter` (OpenClaw's official MCP manager) for configuration. Ensure OpenClaw is installed first.
+`bnbchain-mcp` currently does not support AgentWallet and still uses `PRIVATE_KEY`.
 
 ## 🔐 Security
 
-### Credential Storage Options
+### Wallet Configuration
 
-The installer offers two methods for storing blockchain credentials:
+The installer configures wallet usage through AgentWallet first:
 
-**Option 1: Config File Storage**
-- Keys stored in `~/.mcporter/mcporter.json`
-- Convenient but less secure (plaintext)
-- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
-- Never share or commit this file to version control
+**AgentWallet initialization**
+- Installer launches `agent-wallet start --save-runtime-secrets` in normal mode
+- Installer launches `agent-wallet start --override --save-runtime-secrets` in clean mode
+- Detailed behavior and modes are documented in [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md)
 
-**Option 2: Environment Variables (Recommended)**
-- Keys read from shell environment
-- More secure, not stored in config files
-- Add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.):
-  ```bash
-  # For TRON
-  export TRON_PRIVATE_KEY="your_private_key_here"
-  export TRONGRID_API_KEY="your_api_key_here"
-  
-  # For BSC/EVM chains
-  export PRIVATE_KEY="0x_your_private_key_here"
-  ```
-- Restart your shell or run `source ~/.zshrc` after adding
+**bnbchain-mcp Exception**
+- `bnbchain-mcp` currently requires `PRIVATE_KEY` and is not yet AgentWallet-compatible
 
 **Option 3: Gasfree API Credentials (for x402-payment)**
 - Used for gasless transactions on TRON via the Gasfree service
@@ -127,7 +131,7 @@ The installer offers two methods for storing blockchain credentials:
 - Use dedicated agent wallets with limited funds
 - Never use your main personal wallet
 - Test on testnets (Nile for TRON, BSC Testnet for BSC) before using mainnet
-- Do not allow AI agents to scan files containing private keys
+- Do not allow AI agents to scan files containing wallet secrets
 
 ## Use at your own risk
 

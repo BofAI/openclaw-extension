@@ -1,29 +1,31 @@
-# Release Notes: OpenClaw Extension v1.2.15
+# Release Notes: OpenClaw Extension v1.4.0
 
-**Date**: March 17, 2026  
-**Version**: 1.2.15
+**Date**: March 21, 2026  
+**Version**: 1.4.0
 
 ## Overview
 
-This release pins the installer to a stable skills tag and aligns the extension with the current supported skill set.
+This release restructures the installer around AgentWallet-first setup, adds a full clean-install flow, and pins core dependencies to stable versions for predictable deployments.
 
 ## Highlights
 
-### 1. Pinned Skills Tag
-The installer now defaults to the `v1.4.13` tag of the [skills repository](https://github.com/BofAI/skills). This avoids unexpected changes from tracking the repository `main` branch and gives QA / ops a stable install target.
+### 1. AgentWallet-First Setup
+The installer now starts with AgentWallet initialization and routes CLI I/O through `/dev/tty` when available to support piped installs. It uses:
+- `agent-wallet start --save-runtime-secrets` in normal mode
+- `agent-wallet reset` + `agent-wallet start --override --save-runtime-secrets` in clean mode
 
-### 2. Updated Supported Skills
-The installer flow and documentation now match the current supported skill set:
-- `recharge-skill`
-- `tronscan-skill`
-- `sunswap`
-- `x402-payment`
+### 2. Full Clean Install Mode
+Clean install now performs a full cleanup before re-initialization:
+- clears MCP entries in `~/.mcporter/mcporter.json`
+- removes installed skills under `~/.openclaw/skills` and `.openclaw/skills`
+- deletes local config files: `~/.x402-config.json` and `~/.mcporter/bankofai-config.json`
+- requires explicit confirmation plus typing `CLEAN`
 
-### 3. Improved Skill Setup Prompts
-The installer now includes:
-- local `BANKOFAI_API_KEY` setup guidance for `recharge-skill` for BANK OF AI accounts
-- `TRONSCAN_API_KEY` setup guidance for `tronscan-skill`
-- removal of legacy `8004-skill` prompts and references
+### 3. Pinned Defaults
+The installer now pins:
+- AgentWallet `2.3.0`
+- Skills repository `v1.5.0`
+- `mcp-server-tron@1.1.7`
 
 ## Installation Summary
 
@@ -32,5 +34,6 @@ curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads
 ```
 
 ## Configuration Notes
-- You can still override the pinned skills tag by exporting `GITHUB_BRANCH` before running the installer.
-- Re-running the installer will refresh the currently supported OpenClaw skills list and prompts.
+- `bnbchain-mcp` still uses `PRIVATE_KEY` and is not AgentWallet-compatible.
+- `sunperp` requires `TRON_PRIVATE_KEY`.
+- You can still override the pinned skills branch by exporting `GITHUB_BRANCH` before running the installer.
