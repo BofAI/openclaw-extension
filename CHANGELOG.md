@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TRON MCP Credentials**: Removed `TRON_PRIVATE_KEY` prompts from `mcp-server-tron` setup and aligned it with AgentWallet-based configuration.
 - **bnbchain Compatibility Notice**: Installer now explicitly states `bnbchain-mcp` is not yet AgentWallet-compatible and keeps existing `PRIVATE_KEY` flow.
 - **Skill Setup Prompts**: Removed SunSwap private-key setup reminders from the skills installation flow.
-- **Pinned AgentWallet Version**: Installer now enforces `@bankofai/agent-wallet@2.3.0-beta.8`.
+- **Pinned AgentWallet Version**: Installer now enforces `@bankofai/agent-wallet@2.3.0`.
 - **Initialization Flow**: Installer now always delegates initialization to AgentWallet CLI:
   - `agent-wallet start --save-runtime-secrets` in normal mode
   - `agent-wallet start --override --save-runtime-secrets` in clean mode
