@@ -393,7 +393,7 @@ multiselect() {
     local current=0
     local i
     local term_cols=80
-    local desc_lines=3
+    local desc_lines=4
 
     if [ -r /dev/tty ] && command -v stty &> /dev/null; then
         local had_errexit=0
@@ -422,7 +422,8 @@ multiselect() {
 
     # Prepare screen area
     echo -e "${INFO}?${NC} ${BOLD}$prompt${NC} ${MUTED}(Space:toggle, Enter:confirm)${NC}"
-    for ((i=0; i<${#options[@]}; i++)); do
+    local total_lines=$((${#options[@]} * (1 + desc_lines)))
+    for ((i=0; i<${total_lines}; i++)); do
         echo ""
     done
 
@@ -430,7 +431,7 @@ multiselect() {
 
     while true; do
         # Move cursor up to start of list
-        tput cuu $((${#options[@]} + desc_lines))
+        tput cuu ${total_lines}
 
         for ((i=0; i<${#options[@]}; i++)); do
             tput el # Clear line
@@ -472,23 +473,24 @@ multiselect() {
 
             echo -e "${pointer}${checkbox} ${color}${name}${NC}"
 
-            if [ $i -eq $current ]; then
-                local wrapped=()
-                if [ -n "$desc" ]; then
-                    while IFS= read -r line; do
-                        wrapped+=("$line")
-                    done < <(printf '%s' "$desc" | fold -s -w $((term_cols - 1)))
-                fi
+            local wrapped=()
+            if [ $i -eq $current ] && [ -n "$desc" ]; then
+                while IFS= read -r line; do
+                    wrapped+=("$line")
+                done < <(printf '%s' "$desc" | fold -s -w $((term_cols - 1)))
+            fi
 
-                for ((j=0; j<${desc_lines}; j++)); do
-                    tput el
-                    local line="${wrapped[$j]:-}"
+            for ((j=0; j<${desc_lines}; j++)); do
+                tput el
+                local line=""
+                if [ $i -eq $current ]; then
+                    line="${wrapped[$j]:-}"
                     if [ $j -eq $((desc_lines - 1)) ] && [ ${#wrapped[@]} -gt $((desc_lines)) ]; then
                         line="${line}..."
                     fi
-                    echo -e "${MUTED}${indent}${line}${NC}"
-                done
-            fi
+                fi
+                echo -e "${MUTED}${indent}${line}${NC}"
+            done
         done
 
         # Read Input
