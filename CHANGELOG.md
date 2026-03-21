@@ -5,25 +5,30 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.16] - 2026-03-20
+## [1.4.0] - 2026-03-21
 
 ### Added
 - **AgentWallet First Step**: Installer now runs AgentWallet setup before MCP/skills installation.
-- **Clean Install Mode**: Added an optional destructive clean install flow that:
+- **Clean Install Mode (Full Cleanup)**:
   - clears all MCP entries under `~/.mcporter/mcporter.json`
   - removes all installed skills under `~/.openclaw/skills` and `.openclaw/skills`
-  - runs `agent-wallet start --override --save-runtime-secrets` for wallet reset
-  - requires explicit high-visibility confirmation plus typing `CLEAN`
+  - deletes `~/.x402-config.json` and `~/.mcporter/bankofai-config.json`
+  - runs `agent-wallet reset`, then `agent-wallet start --override --save-runtime-secrets`
+  - requires explicit confirmation plus typing `CLEAN`
+- **Piped Install Compatibility**: AgentWallet CLI is routed through `/dev/tty` when available to support `cat install.sh | bash`.
 
 ### Changed
-- **TRON MCP Credentials**: Removed `TRON_PRIVATE_KEY` prompts from `mcp-server-tron` setup and aligned it with AgentWallet-based configuration.
-- **bnbchain Compatibility Notice**: Installer now explicitly states `bnbchain-mcp` is not yet AgentWallet-compatible and keeps existing `PRIVATE_KEY` flow.
-- **Skill Setup Prompts**: Removed SunSwap private-key setup reminders from the skills installation flow.
 - **Pinned AgentWallet Version**: Installer now enforces `@bankofai/agent-wallet@2.3.0`.
-- **Initialization Flow**: Installer now always delegates initialization to AgentWallet CLI:
+- **Pinned Skills Release**: Default skills branch is now `v1.5.0`.
+- **Pinned TRON MCP Version**: `mcp-server-tron` is now pinned to `1.1.7`.
+- **Initialization Flow**: Installer delegates to AgentWallet CLI:
   - `agent-wallet start --save-runtime-secrets` in normal mode
   - `agent-wallet start --override --save-runtime-secrets` in clean mode
-- **TRON MCP Config Simplification**: Removed installer-managed `AGENT_WALLET_*` injection from `mcp-server-tron` config flow; only network key prompts remain in MCP setup.
+- **TRON MCP Credentials**: Removed `TRON_PRIVATE_KEY` prompts from `mcp-server-tron` setup; only network key remains.
+- **bnbchain Compatibility Notice**: Installer now explicitly states `bnbchain-mcp` is not yet AgentWallet-compatible and keeps existing `PRIVATE_KEY` flow.
+- **Skill Setup Prompts**:
+  - removed SunSwap private-key reminders
+  - added sunperp notice that `TRON_PRIVATE_KEY` is required
 
 ## [1.2.14] - 2026-03-15
 
