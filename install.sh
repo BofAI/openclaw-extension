@@ -472,7 +472,7 @@ multiselect() {
 
             if [ $i -eq $current ] && [ -n "$desc" ]; then
                 local wrapped=()
-                while IFS= read -r line; do
+                while IFS= read -r line || [ -n "$line" ]; do
                     wrapped+=("$line")
                 done < <(printf '%s' "$desc" | fold -s -w $((term_cols - ${#indent} - 1)))
 
