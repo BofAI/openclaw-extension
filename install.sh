@@ -393,7 +393,8 @@ multiselect() {
     local current=0
     local i
     local term_cols=80
-    local desc_lines=4
+    local previous_frame_lines=0
+    local indent="      "
 
     if [ -r /dev/tty ] && command -v stty &> /dev/null; then
         local had_errexit=0
@@ -420,22 +421,19 @@ multiselect() {
         selected[i]=true
     done
 
-    # Prepare screen area
     echo -e "${INFO}?${NC} ${BOLD}$prompt${NC} ${MUTED}(Space:toggle, Enter:confirm)${NC}"
-    local total_lines=$((${#options[@]} * (1 + desc_lines)))
-    for ((i=0; i<${total_lines}; i++)); do
-        echo ""
-    done
 
     tput civis # Hide cursor
 
     while true; do
-        # Move cursor up to start of list
-        tput cuu ${total_lines}
+        if [ $previous_frame_lines -gt 0 ]; then
+            tput cuu ${previous_frame_lines}
+        fi
+        tput ed
+
+        local frame_lines=0
 
         for ((i=0; i<${#options[@]}; i++)); do
-            tput el # Clear line
-
             local checkbox="[ ]"
             local color="$NC"
             local pointer="  "
@@ -443,14 +441,12 @@ multiselect() {
             local name="$raw"
             local desc=""
             local max_len=$((term_cols - 6))
-            local indent="      "
 
             if [[ "$raw" == *"||"* ]]; then
                 name="${raw%%||*}"
                 desc="${raw#*||}"
             fi
 
-            # Normalize whitespace and truncate to prevent terminal wrapping.
             name=$(echo "$name" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')
             if [ ${#name} -gt $max_len ]; then
                 name="${name:0:$max_len}"
@@ -472,26 +468,22 @@ multiselect() {
             fi
 
             echo -e "${pointer}${checkbox} ${color}${name}${NC}"
+            frame_lines=$((frame_lines + 1))
 
-            local wrapped=()
             if [ $i -eq $current ] && [ -n "$desc" ]; then
+                local wrapped=()
                 while IFS= read -r line; do
                     wrapped+=("$line")
-                done < <(printf '%s' "$desc" | fold -s -w $((term_cols - 1)))
-            fi
+                done < <(printf '%s' "$desc" | fold -s -w $((term_cols - ${#indent} - 1)))
 
-            for ((j=0; j<${desc_lines}; j++)); do
-                tput el
-                local line=""
-                if [ $i -eq $current ]; then
-                    line="${wrapped[$j]:-}"
-                    if [ $j -eq $((desc_lines - 1)) ] && [ ${#wrapped[@]} -gt $((desc_lines)) ]; then
-                        line="${line}..."
-                    fi
-                fi
-                echo -e "${MUTED}${indent}${line}${NC}"
-            done
+                for line in "${wrapped[@]}"; do
+                    echo -e "${MUTED}${indent}${line}${NC}"
+                    frame_lines=$((frame_lines + 1))
+                done
+            fi
         done
+
+        previous_frame_lines=$frame_lines
 
         # Read Input
         local key=""
@@ -1002,11 +994,11 @@ else
             if [ -z "$description" ] || [ "$description" = "---" ]; then
                 description=$(grep "^description:" "$dir/SKILL.md" 2>/dev/null | head -n 1 | sed 's/^description: *//' || echo "")
             fi
-            
+
             if [ -z "$description" ]; then
                 description="TRON skill"
             fi
-            
+
             SKILL_IDS+=("$skill_name")
             SKILL_OPTIONS+=("$skill_label||$description")
         fi
