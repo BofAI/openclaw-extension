@@ -392,6 +392,11 @@ multiselect() {
     local selected=()
     local current=0
     local i
+    local term_cols=80
+
+    if command -v tput &> /dev/null; then
+        term_cols=$(tput cols 2>/dev/null || echo 80)
+    fi
 
     # Initialize selection - all selected by default
     for ((i=0; i<${#options[@]}; i++)); do
@@ -416,6 +421,14 @@ multiselect() {
             local checkbox="[ ]"
             local color="$NC"
             local pointer="  "
+            local line="${options[i]}"
+            local max_len=$((term_cols - 6))
+
+            # Normalize whitespace and truncate to prevent terminal wrapping.
+            line=$(echo "$line" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')
+            if [ ${#line} -gt $max_len ]; then
+                line="${line:0:$max_len}"
+            fi
 
             if [ "${selected[i]}" = true ]; then
                 checkbox="${SUCCESS}[x]${NC}"
@@ -432,7 +445,7 @@ multiselect() {
                 fi
             fi
 
-            echo -e "${pointer}${checkbox} ${color}${options[i]}${NC}"
+            echo -e "${pointer}${checkbox} ${color}${line}${NC}"
         done
 
         # Read Input
