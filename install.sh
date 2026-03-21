@@ -396,10 +396,14 @@ multiselect() {
     local desc_lines=3
 
     if [ -r /dev/tty ] && command -v stty &> /dev/null; then
-        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}') || true
+        local had_errexit=0
+        case "$-" in *e*) had_errexit=1 ;; esac
+        if [ $had_errexit -eq 1 ]; then set +e; fi
+        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}')
         if [ -z "$term_cols" ]; then
-            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}') || true
+            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
         fi
+        if [ $had_errexit -eq 1 ]; then set -e; fi
     fi
     if ! [[ "$term_cols" =~ ^[0-9]+$ ]]; then
         term_cols=0
