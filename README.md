@@ -56,6 +56,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
 - **TRON Wallet** (Private Key & API Key for TRON network interaction)
+- **[@bankofai/agent-wallet](https://www.npmjs.com/package/@bankofai/agent-wallet)** (optional, recommended for secure key management)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
@@ -87,17 +88,61 @@ cd openclaw-extension
 
 ### Credential Storage Options
 
-The installer offers two methods for storing blockchain credentials:
+The installer offers five ways to configure blockchain credentials, depending on the component:
 
-**Option 1: Config File Storage**
-- Keys stored in `~/.mcporter/mcporter.json`
-- Convenient but less secure (plaintext)
-- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
-- Never share or commit this file to version control
+**Option 1: Agent Wallet Local Mode (Most Secure — Recommended for x402 skills and TRON MCP)**
+- Private keys encrypted at rest using a master password (Keystore V3 / scrypt)
+- Keys never appear as plaintext environment variables
+- Managed with the [`@bankofai/agent-wallet`](https://www.npmjs.com/package/@bankofai/agent-wallet) CLI
+- Supported by:
+  - `x402-payment` skill
+  - `mcp-server-tron` (uses the active TRON wallet)
+- The installer guides you through setup (Step 3: Agent Wallet Setup)
+- Quick start:
+  ```bash
+  npm install -g @bankofai/agent-wallet
+  agent-wallet start
+  ```
+- Manual setup:
+  ```bash
+  npm install -g @bankofai/agent-wallet
+  agent-wallet init
+  agent-wallet add        # choose tron_local or evm_local
+  agent-wallet list       # confirm wallet name
+  ```
+- Configure for x402-payment skill:
+  ```bash
+  export TRON_AGENT_WALLET_NAME="my-tron-wallet"
+  export AGENT_WALLET_PASSWORD="your-master-password"
+  # export EVM_AGENT_WALLET_NAME="my-evm-wallet"   # optional
+  # export AGENT_WALLET_DIR="~/.agent-wallet"      # optional
+  ```
+- Configure for `mcp-server-tron`:
+  ```bash
+  export AGENT_WALLET_PASSWORD="your-master-password"
+  # export AGENT_WALLET_DIR="~/.agent-wallet"      # optional
+  export TRONGRID_API_KEY="your_api_key_here"      # recommended for mainnet
+  ```
+- `mcp-server-tron` uses the **active** wallet from `agent-wallet`. Switch it with:
+  ```bash
+  agent-wallet list
+  agent-wallet use my-tron-wallet
+  ```
+- See [Agent Wallet CLI Guide](https://www.npmjs.com/package/@bankofai/agent-wallet) for full documentation
 
-**Option 2: Environment Variables (Recommended)**
-- Keys read from shell environment
-- More secure, not stored in config files
+**Option 2: Agent Wallet Private Key Mode**
+- Uses the same `@bankofai/agent-wallet` SDK without a local encrypted keystore
+- Suitable for `x402-payment` when you want a single wallet from environment variables
+- Enabled when `AGENT_WALLET_PASSWORD` is **not** set and exactly one of the following is provided:
+  - `AGENT_WALLET_PRIVATE_KEY`
+- Example:
+  ```bash
+  export AGENT_WALLET_PRIVATE_KEY="your_private_key_here"
+  ```
+
+**Option 3: Environment Variables**
+- Keys read from shell environment, not stored in config files
+- Suitable for MCP servers such as `mcp-server-tron` and `bnbchain-mcp`
 - Add to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.):
   ```bash
   # For TRON
@@ -109,7 +154,26 @@ The installer offers two methods for storing blockchain credentials:
   ```
 - Restart your shell or run `source ~/.zshrc` after adding
 
-**Option 3: Gasfree API Credentials (for x402-payment)**
+**Option 4: Config File Storage**
+- Keys stored in `~/.mcporter/mcporter.json`
+- Convenient but less secure (plaintext)
+- **Important**: Secure the file with `chmod 600 ~/.mcporter/mcporter.json`
+- Never share or commit this file to version control
+
+### Switching Between Private Key and Agent Wallet
+
+For both `x402-payment` and `mcp-server-tron`:
+- Agent Wallet local mode is enabled when `AGENT_WALLET_PASSWORD` is set
+- Agent Wallet private key mode uses `AGENT_WALLET_PRIVATE_KEY`
+- Legacy MCP environment/config mode uses `TRON_PRIVATE_KEY` or config-file credentials
+- When local mode and private key mode both exist, local mode takes priority
+- Users do **not** need to configure any extra source-selection variable
+
+Wallet selection differs slightly:
+- `x402-payment` uses `TRON_AGENT_WALLET_NAME` and `EVM_AGENT_WALLET_NAME` to select which wallet to use
+- `mcp-server-tron` follows the active wallet in `agent-wallet`, so switching is done with `agent-wallet use <id>`
+
+**Option 5: Gasfree API Credentials (for x402-payment)**
 - Used for gasless transactions on TRON via the Gasfree service
 - Stored in `~/.x402-config.json`
 - The installer will prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` when installing the x402-payment skill
@@ -124,6 +188,7 @@ The installer offers two methods for storing blockchain credentials:
 
 ### Best Practices
 
+- **Prefer agent wallet** for x402-payment and `mcp-server-tron` — keys are encrypted, never exposed in config files
 - Use dedicated agent wallets with limited funds
 - Never use your main personal wallet
 - Test on testnets (Nile for TRON, BSC Testnet for BSC) before using mainnet
