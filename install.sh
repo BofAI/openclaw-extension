@@ -395,8 +395,20 @@ multiselect() {
     local term_cols=80
     local desc_lines=3
 
-    if command -v tput &> /dev/null; then
+    if [ -r /dev/tty ]; then
+        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}')
+        if [ -z "$term_cols" ]; then
+            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
+        fi
+    fi
+    if ! [[ "$term_cols" =~ ^[0-9]+$ ]]; then
+        term_cols=0
+    fi
+    if [ "$term_cols" -lt 20 ] && command -v tput &> /dev/null; then
         term_cols=$(tput cols 2>/dev/null || echo 80)
+    fi
+    if ! [[ "$term_cols" =~ ^[0-9]+$ ]] || [ "$term_cols" -lt 20 ]; then
+        term_cols=80
     fi
 
     # Initialize selection - all selected by default
@@ -407,9 +419,6 @@ multiselect() {
     # Prepare screen area
     echo -e "${INFO}?${NC} ${BOLD}$prompt${NC} ${MUTED}(Space:toggle, Enter:confirm)${NC}"
     for ((i=0; i<${#options[@]}; i++)); do
-        echo ""
-    done
-    for ((i=0; i<${desc_lines}; i++)); do
         echo ""
     done
 
@@ -429,6 +438,7 @@ multiselect() {
             local name="$raw"
             local desc=""
             local max_len=$((term_cols - 6))
+            local indent="      "
 
             if [[ "$raw" == *"||"* ]]; then
                 name="${raw%%||*}"
@@ -463,7 +473,7 @@ multiselect() {
                 if [ -n "$desc" ]; then
                     while IFS= read -r line; do
                         wrapped+=("$line")
-                    done < <(printf '%s' "$desc" | fold -s -w "$term_cols")
+                    done < <(printf '%s' "$desc" | fold -s -w $((term_cols - 1)))
                 fi
 
                 for ((j=0; j<${desc_lines}; j++)); do
@@ -472,7 +482,7 @@ multiselect() {
                     if [ $j -eq $((desc_lines - 1)) ] && [ ${#wrapped[@]} -gt $((desc_lines)) ]; then
                         line="${line}..."
                     fi
-                    echo -e "${MUTED}${line}${NC}"
+                    echo -e "${MUTED}${indent}${line}${NC}"
                 done
             fi
         done
