@@ -395,10 +395,10 @@ multiselect() {
     local term_cols=80
     local desc_lines=3
 
-    if [ -r /dev/tty ]; then
-        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}')
+    if [ -r /dev/tty ] && command -v stty &> /dev/null; then
+        term_cols=$(stty -f /dev/tty size 2>/dev/null | awk '{print $2}') || true
         if [ -z "$term_cols" ]; then
-            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}')
+            term_cols=$(stty size < /dev/tty 2>/dev/null | awk '{print $2}') || true
         fi
     fi
     if ! [[ "$term_cols" =~ ^[0-9]+$ ]]; then
