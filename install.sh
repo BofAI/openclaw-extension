@@ -393,7 +393,7 @@ multiselect() {
     local current=0
     local i
     local term_cols=80
-    local desc_lines=4
+    local desc_lines=3
 
     if command -v tput &> /dev/null; then
         term_cols=$(tput cols 2>/dev/null || echo 80)
@@ -457,31 +457,24 @@ multiselect() {
             fi
 
             echo -e "${pointer}${checkbox} ${color}${name}${NC}"
-        done
 
-        # Details panel for current selection (if provided)
-        tput el
-        echo -e "${MUTED}Details:${NC}"
-        local current_raw="${options[$current]}"
-        local current_desc=""
-        if [[ "$current_raw" == *"||"* ]]; then
-            current_desc="${current_raw#*||}"
-        fi
+            if [ $i -eq $current ]; then
+                local wrapped=()
+                if [ -n "$desc" ]; then
+                    while IFS= read -r line; do
+                        wrapped+=("$line")
+                    done < <(printf '%s' "$desc" | fold -s -w "$term_cols")
+                fi
 
-        local wrapped=()
-        if [ -n "$current_desc" ]; then
-            while IFS= read -r line; do
-                wrapped+=("$line")
-            done < <(printf '%s' "$current_desc" | fold -s -w "$term_cols")
-        fi
-
-        for ((i=0; i<${desc_lines}-1; i++)); do
-            tput el
-            local line="${wrapped[$i]:-}"
-            if [ $i -eq $((desc_lines - 2)) ] && [ ${#wrapped[@]} -gt $((desc_lines - 1)) ]; then
-                line="${line}..."
+                for ((j=0; j<${desc_lines}; j++)); do
+                    tput el
+                    local line="${wrapped[$j]:-}"
+                    if [ $j -eq $((desc_lines - 1)) ] && [ ${#wrapped[@]} -gt $((desc_lines)) ]; then
+                        line="${line}..."
+                    fi
+                    echo -e "${MUTED}${line}${NC}"
+                done
             fi
-            echo -e "${MUTED}${line}${NC}"
         done
 
         # Read Input
@@ -825,9 +818,9 @@ echo -e "${BOLD}Step 1: MCP Server Configuration${NC}"
 echo ""
 
 SERVER_OPTIONS=(
-    "mcp-server-tron - Interact with TRON blockchain (Wallets, Transactions, Smart Contracts)"
-    "bnbchain-mcp - BNB Chain official MCP (Multi-chain: BSC, opBNB, Ethereum, Greenfield)"
-    "bankofai-recharge - BANK OF AI recharge MCP (remote recharge tools)"
+    "mcp-server-tron||Interact with TRON blockchain (wallets, transactions, smart contracts)."
+    "bnbchain-mcp||BNB Chain official MCP (BSC, opBNB, Ethereum, Greenfield)."
+    "bankofai-recharge||BANK OF AI recharge MCP (remote recharge tools)."
 )
 SERVER_IDS=(
     "mcp-server-tron"
