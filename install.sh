@@ -698,45 +698,27 @@ else
                  echo -e "${WARN}bnbchain-mcp currently does not support AgentWallet.${NC}"
                  echo -e "${WARN}This server still uses PRIVATE_KEY configuration.${NC}"
                  echo ""
-                 echo -e "${WARN}!!! SECURITY WARNING !!!${NC}"
-                 echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
-                 echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
-                 echo ""
 
-                 # Ask for credential storage method
-                 echo -e "${BOLD}How would you like to store your credentials?${NC}"
-                 echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
-                 echo -e "     ${MUTED}Keys stored in plaintext, convenient but less secure${NC}"
-                 echo -e "  ${INFO}2)${NC} Use environment variables"
-                 echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
-                 echo ""
-                 echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
+                 ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
+                 ask_input "Enter LOG_LEVEL" BNB_LOG_LEVEL 0 "Log level: DEBUG, INFO, WARN, ERROR (default: INFO)"
 
-                 read -r cred_choice <&3
-                 cred_choice=${cred_choice:-2}
-
-                 echo ""
+                 echo -e "${MUTED}Adding MCP server...${NC}"
 
                  if ! npx -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1; then
                      echo -e "${ERROR}✗ Failed to add bnbchain-mcp via npx add-mcp${NC}"
                      continue
                  fi
 
-                 if [ "$cred_choice" = "1" ]; then
-                     # Store in config file
-                     ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
-                     ask_input "Enter LOG_LEVEL" BNB_LOG_LEVEL 0 "Log level: DEBUG, INFO, WARN, ERROR (default: INFO)"
-
-                     echo -e "${MUTED}Saving configuration...${NC}"
-
-                     # Ensure private key has 0x prefix
-                     if [ -n "$BNB_KEY" ]; then
-                         if [[ ! "$BNB_KEY" =~ ^0x ]]; then
-                             BNB_KEY="0x${BNB_KEY}"
-                             echo -e "${INFO}Added 0x prefix to private key${NC}"
-                         fi
+                 # Ensure private key has 0x prefix
+                 if [ -n "$BNB_KEY" ]; then
+                     if [[ ! "$BNB_KEY" =~ ^0x ]]; then
+                         BNB_KEY="0x${BNB_KEY}"
+                         echo -e "${INFO}Added 0x prefix to private key${NC}"
                      fi
+                 fi
 
+                 # Inject env vars into mcporter.json
+                 if [ -n "${BNB_KEY:-}" ] || [ -n "${BNB_LOG_LEVEL:-}" ]; then
                      local env_json
                      env_json=$(BNB_PRIVATE_KEY="${BNB_KEY:-}" BNB_LOG="${BNB_LOG_LEVEL:-INFO}" node -e '
 const d = {};
@@ -745,15 +727,6 @@ d.LOG_LEVEL = process.env.BNB_LOG;
 console.log(JSON.stringify(d));
 ')
                      node_json_merge "bnbchain-mcp" "$env_json" "$MCP_CONFIG_FILE"
-                 else
-                     # Use environment variables
-                     echo -e "${INFO}Using environment variables for credentials.${NC}"
-                     echo -e "${MUTED}The MCP server will read from your shell environment.${NC}"
-                     echo ""
-                     echo -e "${BOLD}Add these to your shell profile (~/.zshrc, ~/.bashrc, etc.):${NC}"
-                     echo -e "${MUTED}export PRIVATE_KEY=\"0x_your_private_key_here\"${NC}"
-                     echo -e "${MUTED}export LOG_LEVEL=\"INFO\"${NC}"
-                     echo ""
                  fi
                  ;;
 
@@ -767,6 +740,9 @@ console.log(JSON.stringify(d));
 
         echo -e "${SUCCESS}✓ Configuration saved for $SERVER_ID.${NC}"
     done
+
+    # Secure mcporter.json — it may contain PRIVATE_KEY in plaintext
+    chmod 600 "$MCP_CONFIG_FILE"
 fi
 
 # --- Step 2: Skills Installation ---
@@ -849,7 +825,7 @@ echo ""
 if [ "$SKIP_MCP" = false ]; then
     echo -e "${SUCCESS}✓${NC} ${BOLD}MCP Server configured${NC}"
     echo -e "  ${INFO}Config file: ${BOLD}$MCP_CONFIG_FILE${NC}"
-    echo -e "  ${WARN}→ Secure your config: ${BOLD}chmod 600 $MCP_CONFIG_FILE${NC}"
+    echo -e "  ${MUTED}  File permissions: 600 (owner read/write only)${NC}"
     echo ""
 fi
 
