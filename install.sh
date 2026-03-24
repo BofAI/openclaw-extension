@@ -698,6 +698,9 @@ else
                  echo -e "${WARN}bnbchain-mcp currently does not support AgentWallet.${NC}"
                  echo -e "${WARN}This server still uses PRIVATE_KEY configuration.${NC}"
                  echo ""
+                 echo -e "${WARN}⚠ Your PRIVATE_KEY will be stored in plaintext in: ${INFO}$MCP_CONFIG_FILE${NC}"
+                 echo -e "${WARN}  File permissions are set to 600 (owner-only), but take care with backups.${NC}"
+                 echo ""
 
                  ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
                  ask_input "Enter LOG_LEVEL" BNB_LOG_LEVEL 0 "Log level: DEBUG, INFO, WARN, ERROR (default: INFO)"
@@ -802,7 +805,9 @@ else
         skill_id="${SKILL_IDS[$idx]}"
         echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
 
-        if ! npx -y skills add "$SKILLS_REPO" -s "$skill_id" -a openclaw -y $SKILLS_GLOBAL_FLAG 2>&1; then
+        local -a skills_cmd=("$SKILLS_REPO" -s "$skill_id" -a openclaw -y)
+        [ -n "$SKILLS_GLOBAL_FLAG" ] && skills_cmd+=("$SKILLS_GLOBAL_FLAG")
+        if ! npx -y skills add "${skills_cmd[@]}" 2>&1; then
             echo -e "${ERROR}✗ Failed to install $skill_id via npx skills add${NC}"
             continue
         fi
