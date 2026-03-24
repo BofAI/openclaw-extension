@@ -225,8 +225,8 @@ run_clean_install() {
     echo ""
     echo -e "${INFO}Running cleanup...${NC}"
     node_json_reset_mcp "$MCP_CONFIG_FILE"
-    npx -y skills remove -a openclaw --all -y -g 2>/dev/null || true
-    npx -y skills remove -a openclaw --all -y 2>/dev/null || true
+    npx -y skills remove -a openclaw --all -y -g </dev/null 2>/dev/null || true
+    npx -y skills remove -a openclaw --all -y </dev/null 2>/dev/null || true
     rm -f "$HOME/.x402-config.json"
     rm -f "$HOME/.mcporter/bankofai-config.json"
     echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
@@ -246,6 +246,8 @@ choose_install_mode() {
     if [ "$install_mode_choice" = "2" ]; then
         CLEAN_INSTALL=true
         run_clean_install
+        echo -e "${SUCCESS}Clean complete — proceeding with fresh setup...${NC}"
+        echo ""
     fi
 }
 
