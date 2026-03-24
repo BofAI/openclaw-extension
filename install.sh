@@ -690,7 +690,6 @@ else
 
                  # Inject TRONGRID_API_KEY env var if provided
                  if [ -n "${TRON_API_KEY:-}" ]; then
-                     local env_json
                      env_json=$(TRON_KEY="$TRON_API_KEY" node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))')
                      node_json_merge "mcp-server-tron" "$env_json" "$MCP_CONFIG_FILE"
                  fi
@@ -724,7 +723,6 @@ else
 
                  # Inject env vars into mcporter.json
                  if [ -n "${BNB_KEY:-}" ] || [ -n "${BNB_LOG_LEVEL:-}" ]; then
-                     local env_json
                      env_json=$(BNB_PRIVATE_KEY="${BNB_KEY:-}" BNB_LOG="${BNB_LOG_LEVEL:-INFO}" node -e '
 const d = {};
 if (process.env.BNB_PRIVATE_KEY) d.PRIVATE_KEY = process.env.BNB_PRIVATE_KEY;
@@ -756,70 +754,54 @@ echo ""
 echo -e "${BOLD}Step 2: Skills Installation${NC}"
 echo ""
 
-SKILL_OPTIONS=(
-    "sunswap||SunSwap DEX interaction for TRON token swaps."
-    "tronscan-skill||TronScan blockchain explorer queries."
-    "x402-payment||Gasless x402 payment protocol for TRON."
-    "recharge-skill||BANK OF AI account recharge operations."
-    "sunperp||SunPerp perpetual trading on TRON."
-)
-SKILL_IDS=(
-    "sunswap"
-    "tronscan-skill"
-    "x402-payment"
-    "recharge-skill"
-    "sunperp"
-)
+# Select install scope
+echo -e "${BOLD}Select skills installation scope:${NC}"
+echo -e "  ${INFO}1)${NC} User-level (global) ${SUCCESS}[Recommended]${NC}"
+echo -e "     ${MUTED}Available to all OpenClaw workspaces${NC}"
+echo -e "  ${INFO}2)${NC} Workspace-level (project)"
+echo -e "     ${MUTED}Only available in current workspace${NC}"
+echo ""
+echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
 
-SELECTED_SKILL_INDICES=()
-multiselect "Select skills to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
+read -r scope_choice <&3
+scope_choice=${scope_choice:-1}
 
-if [ ${#SELECTED_SKILL_INDICES[@]} -eq 0 ]; then
-    echo -e "${MUTED}No skills selected.${NC}"
+if [ "$scope_choice" = "1" ]; then
+    SKILLS_GLOBAL_FLAG="-g"
+    echo -e "${MUTED}→ Installing globally (user-level)${NC}"
 else
+    SKILLS_GLOBAL_FLAG=""
+    echo -e "${MUTED}→ Installing to workspace${NC}"
+fi
+echo ""
+
+# Snapshot installed skills before
+BEFORE_SKILLS=$(npx -y skills@1.4.6 list $SKILLS_GLOBAL_FLAG -a openclaw --json 2>/dev/null || echo "[]")
+
+# Run interactive skills add — user picks skills via built-in multi-select
+echo -e "${INFO}Select skills to install in the interactive prompt below:${NC}"
+echo ""
+npx -y skills@1.4.6 add "$SKILLS_REPO" -a openclaw $SKILLS_GLOBAL_FLAG <&3 2>&1 || true
+echo ""
+
+# Snapshot after and find newly installed skills
+AFTER_SKILLS=$(npx -y skills@1.4.6 list $SKILLS_GLOBAL_FLAG -a openclaw --json 2>/dev/null || echo "[]")
+mapfile -t INSTALLED_SKILLS < <(BEFORE="$BEFORE_SKILLS" AFTER="$AFTER_SKILLS" node -e '
+const before = new Set(JSON.parse(process.env.BEFORE).map(s => s.name || s.skill || s));
+const after = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
+after.filter(s => !before.has(s)).forEach(s => console.log(s));
+')
+
+if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
+    echo -e "${SUCCESS}✓ Installed ${#INSTALLED_SKILLS[@]} skill(s)${NC}"
     echo ""
 
-    # Select install scope
-    echo -e "${BOLD}Select skills installation scope:${NC}"
-    echo -e "  ${INFO}1)${NC} User-level (global) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Available to all OpenClaw workspaces${NC}"
-    echo -e "  ${INFO}2)${NC} Workspace-level (project)"
-    echo -e "     ${MUTED}Only available in current workspace${NC}"
-    echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
-
-    read -r scope_choice <&3
-    scope_choice=${scope_choice:-1}
-
-    if [ "$scope_choice" = "1" ]; then
-        SKILLS_GLOBAL_FLAG="-g"
-        echo -e "${MUTED}→ Installing globally (user-level)${NC}"
-    else
-        SKILLS_GLOBAL_FLAG=""
-        echo -e "${MUTED}→ Installing to workspace${NC}"
-    fi
-    echo ""
-
-    echo -e "${BOLD}Installing skills...${NC}"
-    echo ""
-
-    for idx in "${SELECTED_SKILL_INDICES[@]}"; do
-        skill_id="${SKILL_IDS[$idx]}"
-        echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
-
-        local -a skills_cmd=("$SKILLS_REPO" -s "$skill_id" -a openclaw -y)
-        [ -n "$SKILLS_GLOBAL_FLAG" ] && skills_cmd+=("$SKILLS_GLOBAL_FLAG")
-        if ! npx -y skills add "${skills_cmd[@]}" 2>&1; then
-            echo -e "${ERROR}✗ Failed to install $skill_id via npx skills add${NC}"
-            continue
-        fi
-
-        echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
-        INSTALLED_SKILLS+=("$skill_id")
-
-        # Run post-install configuration
+    # Run post-install configuration for each new skill
+    for skill_id in "${INSTALLED_SKILLS[@]}"; do
         configure_skill "$skill_id"
     done
+else
+    echo -e "${MUTED}No new skills were installed.${NC}"
 fi
 
 # --- Final Summary ---
