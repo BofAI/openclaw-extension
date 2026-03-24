@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # OpenClaw Extension Installer (by BANK OF AI)
-# Installs MCP server and TRON skills from GitHub
+# Installs MCP servers via npx add-mcp and skills via npx skills add
 
 # --- Colors & Styling ---
 BOLD='\033[1m'
@@ -26,37 +26,17 @@ fi
 
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
-OPENCLAW_USER_SKILLS="$HOME/.openclaw/skills"
-OPENCLAW_WORKSPACE_SKILLS=".openclaw/skills"
-GITHUB_REPO="https://github.com/BofAI/skills.git"
-GITHUB_BRANCH="${GITHUB_BRANCH:-v1.5.0}"
 AGENT_WALLET_VERSION="2.3.0"
-TMPFILES=()
-TEMP_DIR=""
+SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.0"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
+SKILLS_GLOBAL_FLAG=""
 
 # --- Cleanup ---
 cleanup() {
-    local f
-    for f in "${TMPFILES[@]:-}"; do
-        rm -f "$f" 2>/dev/null || true
-    done
-    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
-    fi
     tput cnorm 2>/dev/null || true
 }
 trap cleanup EXIT
-
-# --- Helper Functions ---
-
-mktempfile() {
-    local f
-    f="$(mktemp)"
-    TMPFILES+=("$f")
-    echo "$f"
-}
 
 # --- Taglines ---
 TAGLINES=(
@@ -94,16 +74,6 @@ check_env() {
         exit 1
     fi
 
-    # Detect Python interpreter
-    if command -v python3 &> /dev/null; then
-        PYTHON_CMD="python3"
-    elif command -v python &> /dev/null; then
-        PYTHON_CMD="python"
-    else
-        echo -e "${ERROR}Error: Neither 'python3' nor 'python' found (required for JSON processing).${NC}"
-        exit 1
-    fi
-    
     # Check if OpenClaw is installed (mcporter config directory should exist)
     if [ ! -d "$HOME/.openclaw" ]; then
         echo -e "${WARN}Warning: OpenClaw doesn't appear to be installed.${NC}"
@@ -118,73 +88,85 @@ check_env() {
     fi
 }
 
-# --- JSON Helper ---
-write_server_config() {
-    local server="$1"
-    local json_payload="$2"
+# --- Node.js JSON Helpers ---
+
+node_json_merge() {
+    local server_id="$1"
+    local env_json="$2"
     local config_file="$3"
 
-    local py_script
-    py_script=$(mktempfile)
-
-    local payload_file
-    payload_file=$(mktempfile)
-    echo "$json_payload" > "$payload_file"
-
-    cat <<EOF > "$py_script"
-import json
-import os
-import sys
-
-file_path = '$config_file'
-server_name = '$server'
-payload_file = '$payload_file'
-
-try:
-    with open(payload_file, 'r') as f:
-        payload = json.load(f)
-except Exception:
-    sys.exit(1)
-
-data = {}
-if os.path.exists(file_path):
-    try:
-        with open(file_path, 'r') as f:
-            content = f.read()
-            if content.strip():
-                data = json.loads(content)
-    except ValueError:
-        pass
-
-if 'mcpServers' not in data:
-    data['mcpServers'] = {}
-
-if server_name not in data['mcpServers']:
-    data['mcpServers'][server_name] = {}
-
-# Deep merge logic for 'env'
-if 'env' in payload:
-    if 'env' not in data['mcpServers'][server_name]:
-        data['mcpServers'][server_name]['env'] = {}
-
-    for k, v in payload['env'].items():
-        if v is None or v == "":
-             if k in data['mcpServers'][server_name]['env']:
-                 del data['mcpServers'][server_name]['env'][k]
-        else:
-             data['mcpServers'][server_name]['env'][k] = v
-
-    del payload['env']
-
-# Update other top-level keys
-for k, v in payload.items():
-    data['mcpServers'][server_name][k] = v
-
-with open(file_path, 'w') as f:
-    json.dump(data, f, indent=2)
-EOF
-    $PYTHON_CMD "$py_script"
+    MCP_FILE="$config_file" SERVER_ID="$server_id" ENV_JSON="$env_json" node -e '
+const fs = require("fs");
+const f = process.env.MCP_FILE;
+const sid = process.env.SERVER_ID;
+const envData = JSON.parse(process.env.ENV_JSON);
+let d = {};
+if (fs.existsSync(f)) {
+    try { d = JSON.parse(fs.readFileSync(f, "utf8")); } catch(e) {}
 }
+if (!d.mcpServers) d.mcpServers = {};
+if (!d.mcpServers[sid]) d.mcpServers[sid] = {};
+if (!d.mcpServers[sid].env) d.mcpServers[sid].env = {};
+for (const [k, v] of Object.entries(envData)) {
+    if (v === null || v === "") {
+        delete d.mcpServers[sid].env[k];
+    } else {
+        d.mcpServers[sid].env[k] = v;
+    }
+}
+fs.writeFileSync(f, JSON.stringify(d, null, 2));
+'
+}
+
+node_json_write() {
+    local file_path="$1"
+    local json_content="$2"
+
+    FILE_PATH="$file_path" JSON_CONTENT="$json_content" node -e '
+const fs = require("fs");
+const path = require("path");
+const f = process.env.FILE_PATH;
+const dir = path.dirname(f);
+if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+const data = JSON.parse(process.env.JSON_CONTENT);
+fs.writeFileSync(f, JSON.stringify(data, null, 2));
+'
+}
+
+node_json_read() {
+    local file_path="$1"
+    local key="$2"
+
+    FILE_PATH="$file_path" JSON_KEY="$key" node -e '
+const fs = require("fs");
+const f = process.env.FILE_PATH;
+const k = process.env.JSON_KEY;
+try {
+    const d = JSON.parse(fs.readFileSync(f, "utf8"));
+    const v = d[k];
+    process.stdout.write(v ? String(v) : "");
+} catch(e) {
+    process.stdout.write("");
+}
+'
+}
+
+node_json_reset_mcp() {
+    local config_file="$1"
+
+    MCP_FILE="$config_file" node -e '
+const fs = require("fs");
+const f = process.env.MCP_FILE;
+let d = {};
+if (fs.existsSync(f)) {
+    try { d = JSON.parse(fs.readFileSync(f, "utf8")); } catch(e) {}
+}
+d.mcpServers = {};
+fs.writeFileSync(f, JSON.stringify(d, null, 2));
+'
+}
+
+# --- Input Helper ---
 
 ask_input() {
     local prompt="$1"
@@ -208,46 +190,7 @@ ask_input() {
     printf -v "$var_name" '%s' "$input_val"
 }
 
-json_string_or_null() {
-    local value="${1:-}"
-    if [ -z "$value" ]; then
-        echo "null"
-    else
-        printf '%s' "$value" | $PYTHON_CMD -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
-    fi
-}
-
-clear_all_mcp_entries() {
-    mkdir -p "$MCP_CONFIG_DIR"
-    MCP_FILE_PATH="$MCP_CONFIG_FILE" $PYTHON_CMD - <<'PY'
-import json
-import os
-
-path = os.environ["MCP_FILE_PATH"]
-data = {}
-
-if os.path.exists(path):
-    try:
-        with open(path, "r") as f:
-            content = f.read().strip()
-            if content:
-                data = json.loads(content)
-    except Exception:
-        data = {}
-
-data["mcpServers"] = {}
-
-with open(path, "w") as f:
-    json.dump(data, f, indent=2)
-PY
-}
-
-clear_all_skills_under_dir() {
-    local skills_dir="$1"
-    if [ -d "$skills_dir" ]; then
-        find "$skills_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-    fi
-}
+# --- Clean Install ---
 
 run_clean_install() {
     echo ""
@@ -258,7 +201,7 @@ run_clean_install() {
     echo ""
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
-    echo -e "  ${WARN}•${NC} ALL skills in: ${INFO}$OPENCLAW_USER_SKILLS${NC} and ${INFO}$OPENCLAW_WORKSPACE_SKILLS${NC}"
+    echo -e "  ${WARN}•${NC} ALL installed skills (global and workspace)"
     echo -e "  ${WARN}•${NC} x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
     echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
     echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override --save-runtime-secrets${NC}"
@@ -281,9 +224,9 @@ run_clean_install() {
 
     echo ""
     echo -e "${INFO}Running cleanup...${NC}"
-    clear_all_mcp_entries
-    clear_all_skills_under_dir "$OPENCLAW_USER_SKILLS"
-    clear_all_skills_under_dir "$OPENCLAW_WORKSPACE_SKILLS"
+    node_json_reset_mcp "$MCP_CONFIG_FILE"
+    npx -y skills remove -a openclaw --all -y -g 2>/dev/null || true
+    npx -y skills remove -a openclaw --all -y 2>/dev/null || true
     rm -f "$HOME/.x402-config.json"
     rm -f "$HOME/.mcporter/bankofai-config.json"
     echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
@@ -532,64 +475,7 @@ multiselect() {
     eval $result_var="(${indices[@]})"
 }
 
-# --- Skills Installation Functions ---
-
-clone_skills_repo() {
-    echo -e "${INFO}Cloning skills repository ($GITHUB_BRANCH)...${NC}"
-    TEMP_DIR=$(mktemp -d)
-    
-    if ! git clone --depth 1 -b "$GITHUB_BRANCH" "$GITHUB_REPO" "$TEMP_DIR" 2>/dev/null; then
-        echo -e "${ERROR}Error: Failed to clone repository from $GITHUB_REPO${NC}"
-        return 1
-    fi
-    
-    echo -e "${SUCCESS}✓ Repository cloned${NC}"
-    echo ""
-    return 0
-}
-
-select_install_target() {
-    echo -e "${BOLD}Select skills installation location:${NC}"
-    echo -e "  ${INFO}1)${NC} User-level (${INFO}~/.openclaw/skills/${NC}) ${SUCCESS}[Recommended]${NC}"
-    echo -e "     ${MUTED}Available to all OpenClaw workspaces${NC}"
-    echo -e "  ${INFO}2)${NC} Workspace-level (${INFO}.openclaw/skills/${NC})"
-    echo -e "     ${MUTED}Only available in current workspace${NC}"
-    echo -e "  ${INFO}3)${NC} Custom path"
-    echo ""
-    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-3, default: 1)${NC}: "
-    
-    read -r choice <&3
-    choice=${choice:-1}
-    
-    case $choice in
-        1)
-            TARGET_DIR="$OPENCLAW_USER_SKILLS"
-            ;;
-        2)
-            TARGET_DIR="$OPENCLAW_WORKSPACE_SKILLS"
-            ;;
-        3)
-            echo -ne "${INFO}?${NC} Enter custom path: "
-            read -r TARGET_DIR <&3
-            TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
-            ;;
-        *)
-            echo -e "${WARN}Invalid choice, using default${NC}"
-            TARGET_DIR="$OPENCLAW_USER_SKILLS"
-            ;;
-    esac
-    
-    echo -e "${MUTED}→ Installing to: ${INFO}$TARGET_DIR${NC}"
-    echo ""
-}
-
-pretty_skill_name() {
-    local skill_id="$1"
-    case "$skill_id" in
-        "recharge-skill") echo "recharge-skill" ;;
-        *) echo "$skill_id" ;;
-    esac
-}
+# --- Skill Configuration Functions ---
 
 configure_bankofai_api_key() {
     echo ""
@@ -599,20 +485,13 @@ configure_bankofai_api_key() {
     echo ""
 
     local bankofai_config="$HOME/.mcporter/bankofai-config.json"
-    local has_key="no"
+    local has_key=""
 
     if [ -f "$bankofai_config" ]; then
-        has_key=$($PYTHON_CMD -c "
-import json
-try:
-    c = json.load(open('$bankofai_config'))
-    print('yes' if c.get('api_key') else 'no')
-except Exception:
-    print('no')
-" 2>/dev/null)
+        has_key=$(node_json_read "$bankofai_config" "api_key")
     fi
 
-    if [ "$has_key" = "yes" ]; then
+    if [ -n "$has_key" ]; then
         echo -e "${SUCCESS}✓ BANK OF AI API key already configured${NC}"
         echo -e "${MUTED}  Config: $bankofai_config${NC}"
         echo ""
@@ -629,20 +508,12 @@ except Exception:
     echo ""
 
     if [ -n "$bankofai_api_key" ]; then
-        mkdir -p "$(dirname "$bankofai_config")"
-        BANKOFAI_API_KEY="$bankofai_api_key" BANKOFAI_CONFIG="$bankofai_config" $PYTHON_CMD - <<'PY'
-import json
-import os
-
-config_path = os.environ["BANKOFAI_CONFIG"]
-api_key = os.environ["BANKOFAI_API_KEY"]
-payload = {
-    "api_key": api_key,
-    "base_url": "https://chat.ainft.com"
-}
-with open(config_path, "w") as f:
-    json.dump(payload, f, indent=2)
-PY
+        local json_content
+        json_content=$(BANKOFAI_API_KEY="$bankofai_api_key" node -e '
+const k = process.env.BANKOFAI_API_KEY;
+console.log(JSON.stringify({ api_key: k, base_url: "https://chat.ainft.com" }));
+')
+        node_json_write "$bankofai_config" "$json_content"
         chmod 600 "$bankofai_config"
         echo -e "${SUCCESS}✓ BANK OF AI config saved to $bankofai_config${NC}"
         echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
@@ -673,132 +544,85 @@ configure_tronscan_api_key() {
     echo ""
 }
 
-copy_skill() {
-    local skill_id="$1"
-    local target_dir="$2"
-    
-    local skill_label
-    skill_label=$(pretty_skill_name "$skill_id")
-    echo -e "${INFO}Installing ${BOLD}$skill_label${NC}${INFO}...${NC}"
-    
-    if [ ! -d "$TEMP_DIR/$skill_id" ]; then
-        echo -e "${ERROR}✗ Skill $skill_id not found in repository${NC}"
-        return 1
-    fi
-    
-    if [ ! -f "$TEMP_DIR/$skill_id/SKILL.md" ]; then
-        echo -e "${ERROR}✗ $skill_id/SKILL.md not found${NC}"
-        return 1
-    fi
-    
-    if [ -d "$target_dir/$skill_id" ]; then
-        echo -e "${WARN}⚠ $skill_label already exists${NC}"
-        echo -ne "${INFO}?${NC} Overwrite? ${MUTED}(y/N)${NC}: "
-        read -r confirm <&3
-        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-            echo -e "${MUTED}  Skipped $skill_label${NC}"
-            return 0
-        fi
-        rm -rf "$target_dir/$skill_id"
-    fi
-    
-    mkdir -p "$target_dir"
-    cp -r "$TEMP_DIR/$skill_id" "$target_dir/"
-    
-    # Install npm dependencies if package.json exists
-    if [ -f "$target_dir/$skill_id/package.json" ]; then
-        echo -e "${MUTED}  Installing npm dependencies...${NC}"
-        (cd "$target_dir/$skill_id" && npm install --silent 2>/dev/null) || echo -e "${WARN}  ⚠ npm install failed (non-critical)${NC}"
-    fi
+configure_x402_gasfree() {
+    echo ""
+    echo -e "${BOLD}Gasfree API Configuration${NC}"
+    echo -e "${MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${NC}"
+    echo ""
 
-    if [ "$skill_id" = "sunperp" ]; then
-        echo ""
-        echo -e "${WARN}sunperp depends on TRON_PRIVATE_KEY.${NC}"
-        echo -e "${MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${NC}"
-        echo ""
-    fi
-    
-    # Special handling for x402-payment: configure gasfree API credentials
-    if [ "$skill_id" = "x402-payment" ]; then
-        echo ""
-        echo -e "${BOLD}Gasfree API Configuration${NC}"
-        echo -e "${MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${NC}"
-        echo ""
+    local x402_config="$HOME/.x402-config.json"
+    local has_keys=""
+    local reconfig_gasfree="N"
 
-        local x402_config="$HOME/.x402-config.json"
+    # Check if config already exists with valid keys
+    if [ -f "$x402_config" ]; then
+        local gasfree_key
+        local gasfree_secret
+        gasfree_key=$(node_json_read "$x402_config" "gasfree_api_key")
+        gasfree_secret=$(node_json_read "$x402_config" "gasfree_api_secret")
 
-        # Check if config already exists with valid keys
-        if [ -f "$x402_config" ]; then
-            local has_keys
-            has_keys=$($PYTHON_CMD -c "
-import json, sys
-try:
-    c = json.load(open('$x402_config'))
-    if c.get('gasfree_api_key') and c.get('gasfree_api_secret'):
-        print('yes')
-    else:
-        print('no')
-except Exception:
-    print('no')
-" 2>/dev/null)
-
-            if [ "$has_keys" = "yes" ]; then
-                echo -e "${SUCCESS}✓ Gasfree API credentials already configured${NC}"
-                echo -e "${MUTED}  Config: $x402_config${NC}"
-                echo ""
-                echo -ne "${INFO}?${NC} Reconfigure Gasfree API credentials? ${MUTED}(y/N)${NC}: "
-                read -r reconfig_gasfree <&3
-                if [[ ! "$reconfig_gasfree" =~ ^[Yy]$ ]]; then
-                    echo ""
-                fi
-            fi
-        fi
-
-        # Prompt for credentials if not yet configured or user wants to reconfigure
-        if [ ! -f "$x402_config" ] || [ "${has_keys:-no}" != "yes" ] || [[ "${reconfig_gasfree:-N}" =~ ^[Yy]$ ]]; then
-            echo -ne "${INFO}?${NC} Enter GASFREE_API_KEY ${MUTED}(optional)${NC}: "
-            read -r gasfree_api_key <&3
-
-            echo -ne "${INFO}?${NC} Enter GASFREE_API_SECRET ${MUTED}(optional, hidden)${NC}: "
-            read -rs gasfree_api_secret <&3
+        if [ -n "$gasfree_key" ] && [ -n "$gasfree_secret" ]; then
+            has_keys="yes"
+            echo -e "${SUCCESS}✓ Gasfree API credentials already configured${NC}"
+            echo -e "${MUTED}  Config: $x402_config${NC}"
             echo ""
-
-            if [ -n "$gasfree_api_key" ] && [ -n "$gasfree_api_secret" ]; then
-                $PYTHON_CMD -c "
-import json
-config = {'gasfree_api_key': '$gasfree_api_key', 'gasfree_api_secret': '$gasfree_api_secret'}
-with open('$x402_config', 'w') as f:
-    json.dump(config, f, indent=2)
-"
-                chmod 600 "$x402_config"
-                echo -e "${SUCCESS}✓ Gasfree API credentials saved to $x402_config${NC}"
-                echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
-            else
-                echo -e "${WARN}Incomplete credentials, skipping Gasfree configuration${NC}"
-                echo -e "${INFO}Configure later by creating $x402_config:${NC}"
-                echo -e "${MUTED}  {\"gasfree_api_key\": \"YOUR_KEY\", \"gasfree_api_secret\": \"YOUR_SECRET\"}${NC}"
+            echo -ne "${INFO}?${NC} Reconfigure Gasfree API credentials? ${MUTED}(y/N)${NC}: "
+            read -r reconfig_gasfree <&3
+            if [[ ! "$reconfig_gasfree" =~ ^[Yy]$ ]]; then
+                echo ""
+                return 0
             fi
         fi
+    fi
 
+    # Prompt for credentials if not yet configured or user wants to reconfigure
+    if [ ! -f "$x402_config" ] || [ "${has_keys:-no}" != "yes" ] || [[ "${reconfig_gasfree:-N}" =~ ^[Yy]$ ]]; then
+        echo -ne "${INFO}?${NC} Enter GASFREE_API_KEY ${MUTED}(optional)${NC}: "
+        read -r gasfree_api_key <&3
+
+        echo -ne "${INFO}?${NC} Enter GASFREE_API_SECRET ${MUTED}(optional, hidden)${NC}: "
+        read -rs gasfree_api_secret <&3
         echo ""
+
+        if [ -n "$gasfree_api_key" ] && [ -n "$gasfree_api_secret" ]; then
+            local json_content
+            json_content=$(GASFREE_KEY="$gasfree_api_key" GASFREE_SECRET="$gasfree_api_secret" node -e '
+console.log(JSON.stringify({ gasfree_api_key: process.env.GASFREE_KEY, gasfree_api_secret: process.env.GASFREE_SECRET }));
+')
+            node_json_write "$x402_config" "$json_content"
+            chmod 600 "$x402_config"
+            echo -e "${SUCCESS}✓ Gasfree API credentials saved to $x402_config${NC}"
+            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
+        else
+            echo -e "${WARN}Incomplete credentials, skipping Gasfree configuration${NC}"
+            echo -e "${INFO}Configure later by creating $x402_config:${NC}"
+            echo -e "${MUTED}  {\"gasfree_api_key\": \"YOUR_KEY\", \"gasfree_api_secret\": \"YOUR_SECRET\"}${NC}"
+        fi
     fi
 
-    if [ "$skill_id" = "recharge-skill" ]; then
-        configure_bankofai_api_key
-    fi
+    echo ""
+}
 
-    if [ "$skill_id" = "tronscan-skill" ]; then
-        configure_tronscan_api_key
-    fi
+configure_skill() {
+    local skill_id="$1"
 
-    if [ -f "$target_dir/$skill_id/SKILL.md" ]; then
-        echo -e "${SUCCESS}✓ $skill_label installed successfully${NC}"
-        INSTALLED_SKILLS+=("$skill_label")
-        return 0
-    else
-        echo -e "${ERROR}✗ Installation failed${NC}"
-        return 1
-    fi
+    case "$skill_id" in
+        "sunperp")
+            echo ""
+            echo -e "${WARN}sunperp depends on TRON_PRIVATE_KEY.${NC}"
+            echo -e "${MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${NC}"
+            echo ""
+            ;;
+        "x402-payment")
+            configure_x402_gasfree
+            ;;
+        "recharge-skill")
+            configure_bankofai_api_key
+            ;;
+        "tronscan-skill")
+            configure_tronscan_api_key
+            ;;
+    esac
 }
 
 # --- Main Logic ---
@@ -844,7 +668,7 @@ if [ ${#SELECTED_INDICES[@]} -eq 0 ]; then
     SKIP_MCP=true
 else
     SKIP_MCP=false
-    
+
     for idx in "${SELECTED_INDICES[@]}"; do
         SERVER_ID="${SERVER_IDS[$idx]}"
 
@@ -855,24 +679,21 @@ else
             "mcp-server-tron")
                  echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
                  ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Optional but recommended for reliable network access."
-                 echo -e "${MUTED}Saving configuration...${NC}"
+                 echo -e "${MUTED}Adding MCP server...${NC}"
 
-                 TRON_API_KEY_VAL=$(json_string_or_null "$TRON_API_KEY")
+                 if ! npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1; then
+                     echo -e "${ERROR}✗ Failed to add mcp-server-tron via npx add-mcp${NC}"
+                     continue
+                 fi
 
-                 JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bankofai/mcp-server-tron@1.1.7"],
-  "env": {
-    "TRONGRID_API_KEY": $TRON_API_KEY_VAL
-  }
-}
-EOF
-)
-
-                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 # Inject TRONGRID_API_KEY env var if provided
+                 if [ -n "${TRON_API_KEY:-}" ]; then
+                     local env_json
+                     env_json=$(TRON_KEY="$TRON_API_KEY" node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))')
+                     node_json_merge "mcp-server-tron" "$env_json" "$MCP_CONFIG_FILE"
+                 fi
                  ;;
-            
+
             "bnbchain-mcp")
                  echo -e "${WARN}bnbchain-mcp currently does not support AgentWallet.${NC}"
                  echo -e "${WARN}This server still uses PRIVATE_KEY configuration.${NC}"
@@ -881,7 +702,7 @@ EOF
                  echo -e "${WARN}Sensitive keys will be saved in PLAINTEXT to: ${INFO}$MCP_CONFIG_FILE${NC}"
                  echo -e "${WARN}DO NOT allow AI agents to scan this file.${NC}"
                  echo ""
-                 
+
                  # Ask for credential storage method
                  echo -e "${BOLD}How would you like to store your credentials?${NC}"
                  echo -e "  ${INFO}1)${NC} Save in config file (${INFO}$MCP_CONFIG_FILE${NC})"
@@ -890,12 +711,17 @@ EOF
                  echo -e "     ${MUTED}Keys read from shell environment, more secure${NC}"
                  echo ""
                  echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 2)${NC}: "
-                 
+
                  read -r cred_choice <&3
                  cred_choice=${cred_choice:-2}
-                 
+
                  echo ""
-                 
+
+                 if ! npx -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1; then
+                     echo -e "${ERROR}✗ Failed to add bnbchain-mcp via npx add-mcp${NC}"
+                     continue
+                 fi
+
                  if [ "$cred_choice" = "1" ]; then
                      # Store in config file
                      ask_input "Enter BNB Chain PRIVATE_KEY" BNB_KEY 1 "Your BNB Chain wallet private key (with or without 0x prefix). Required for signing transactions."
@@ -909,24 +735,16 @@ EOF
                              BNB_KEY="0x${BNB_KEY}"
                              echo -e "${INFO}Added 0x prefix to private key${NC}"
                          fi
-                         BNB_KEY_VAL="\"$BNB_KEY\""
-                     else
-                         BNB_KEY_VAL="null"
                      fi
 
-                     BNB_LOG_LEVEL_VAL="\"${BNB_LOG_LEVEL:-INFO}\""
-
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bnb-chain/mcp@latest"],
-  "env": {
-    "PRIVATE_KEY": $BNB_KEY_VAL,
-    "LOG_LEVEL": $BNB_LOG_LEVEL_VAL
-  }
-}
-EOF
-)
+                     local env_json
+                     env_json=$(BNB_PRIVATE_KEY="${BNB_KEY:-}" BNB_LOG="${BNB_LOG_LEVEL:-INFO}" node -e '
+const d = {};
+if (process.env.BNB_PRIVATE_KEY) d.PRIVATE_KEY = process.env.BNB_PRIVATE_KEY;
+d.LOG_LEVEL = process.env.BNB_LOG;
+console.log(JSON.stringify(d));
+')
+                     node_json_merge "bnbchain-mcp" "$env_json" "$MCP_CONFIG_FILE"
                  else
                      # Use environment variables
                      echo -e "${INFO}Using environment variables for credentials.${NC}"
@@ -936,28 +754,14 @@ EOF
                      echo -e "${MUTED}export PRIVATE_KEY=\"0x_your_private_key_here\"${NC}"
                      echo -e "${MUTED}export LOG_LEVEL=\"INFO\"${NC}"
                      echo ""
-                     
-                     JSON_PAYLOAD=$(cat <<EOF
-{
-  "command": "npx",
-  "args": ["-y", "@bnb-chain/mcp@latest"]
-}
-EOF
-)
                  fi
-                 
-                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
                  ;;
 
             "bankofai-recharge")
-                 JSON_PAYLOAD=$(cat <<EOF
-{
-  "baseUrl": "https://recharge.bankofai.io/mcp"
-}
-EOF
-)
-
-                 write_server_config "$SERVER_ID" "$JSON_PAYLOAD" "$MCP_CONFIG_FILE"
+                 if ! npx -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1; then
+                     echo -e "${ERROR}✗ Failed to add bankofai-recharge via npx add-mcp${NC}"
+                     continue
+                 fi
                  ;;
         esac
 
@@ -965,66 +769,74 @@ EOF
     done
 fi
 
-# --- Step 2: Skills Installation from GitHub ---
+# --- Step 2: Skills Installation ---
 
 echo ""
-echo -e "${BOLD}Step 2: Skills Installation from GitHub${NC}"
+echo -e "${BOLD}Step 2: Skills Installation${NC}"
 echo ""
 
-if ! clone_skills_repo; then
-    echo -e "${WARN}Skipping skills installation due to clone failure.${NC}"
+SKILL_OPTIONS=(
+    "sunswap||SunSwap DEX interaction for TRON token swaps."
+    "tronscan-skill||TronScan blockchain explorer queries."
+    "x402-payment||Gasless x402 payment protocol for TRON."
+    "recharge-skill||BANK OF AI account recharge operations."
+    "sunperp||SunPerp perpetual trading on TRON."
+)
+SKILL_IDS=(
+    "sunswap"
+    "tronscan-skill"
+    "x402-payment"
+    "recharge-skill"
+    "sunperp"
+)
+
+SELECTED_SKILL_INDICES=()
+multiselect "Select skills to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
+
+if [ ${#SELECTED_SKILL_INDICES[@]} -eq 0 ]; then
+    echo -e "${MUTED}No skills selected.${NC}"
 else
-    # Discover available skills
-    SKILL_OPTIONS=()
-    SKILL_IDS=()
+    echo ""
 
-    for dir in "$TEMP_DIR"/*; do
-        if [ -d "$dir" ] && [ -f "$dir/SKILL.md" ]; then
-            skill_name=$(basename "$dir")
-            skill_label=$(pretty_skill_name "$skill_name")
-            
-            # Skip installer directory
-            if [ "$skill_name" = "installer" ]; then
-                continue
-            fi
-            
-            # Read description
-            description=$(head -n 1 "$dir/SKILL.md" | sed 's/^#* *//' | sed 's/^---$//')
-            
-            if [ -z "$description" ] || [ "$description" = "---" ]; then
-                description=$(grep "^description:" "$dir/SKILL.md" 2>/dev/null | head -n 1 | sed 's/^description: *//' || echo "")
-            fi
+    # Select install scope
+    echo -e "${BOLD}Select skills installation scope:${NC}"
+    echo -e "  ${INFO}1)${NC} User-level (global) ${SUCCESS}[Recommended]${NC}"
+    echo -e "     ${MUTED}Available to all OpenClaw workspaces${NC}"
+    echo -e "  ${INFO}2)${NC} Workspace-level (project)"
+    echo -e "     ${MUTED}Only available in current workspace${NC}"
+    echo ""
+    echo -ne "${INFO}?${NC} Enter choice ${MUTED}(1-2, default: 1)${NC}: "
 
-            if [ -z "$description" ]; then
-                description="TRON skill"
-            fi
+    read -r scope_choice <&3
+    scope_choice=${scope_choice:-1}
 
-            SKILL_IDS+=("$skill_name")
-            SKILL_OPTIONS+=("$skill_label||$description")
-        fi
-    done
-
-    if [ ${#SKILL_OPTIONS[@]} -eq 0 ]; then
-        echo -e "${WARN}No skills found in repository.${NC}"
+    if [ "$scope_choice" = "1" ]; then
+        SKILLS_GLOBAL_FLAG="-g"
+        echo -e "${MUTED}→ Installing globally (user-level)${NC}"
     else
-        SELECTED_SKILL_INDICES=()
-        multiselect "Select skills to install:" SELECTED_SKILL_INDICES "${SKILL_OPTIONS[@]}"
-
-        if [ ${#SELECTED_SKILL_INDICES[@]} -eq 0 ]; then
-            echo -e "${MUTED}No skills selected.${NC}"
-        else
-            echo ""
-            select_install_target
-            
-            echo -e "${BOLD}Installing skills...${NC}"
-            echo ""
-
-            for idx in "${SELECTED_SKILL_INDICES[@]}"; do
-                skill_id="${SKILL_IDS[$idx]}"
-                copy_skill "$skill_id" "$TARGET_DIR"
-            done
-        fi
+        SKILLS_GLOBAL_FLAG=""
+        echo -e "${MUTED}→ Installing to workspace${NC}"
     fi
+    echo ""
+
+    echo -e "${BOLD}Installing skills...${NC}"
+    echo ""
+
+    for idx in "${SELECTED_SKILL_INDICES[@]}"; do
+        skill_id="${SKILL_IDS[$idx]}"
+        echo -e "${INFO}Installing ${BOLD}$skill_id${NC}${INFO}...${NC}"
+
+        if ! npx -y skills add "$SKILLS_REPO" -s "$skill_id" -a openclaw -y $SKILLS_GLOBAL_FLAG 2>&1; then
+            echo -e "${ERROR}✗ Failed to install $skill_id via npx skills add${NC}"
+            continue
+        fi
+
+        echo -e "${SUCCESS}✓ $skill_id installed successfully${NC}"
+        INSTALLED_SKILLS+=("$skill_id")
+
+        # Run post-install configuration
+        configure_skill "$skill_id"
+    done
 fi
 
 # --- Final Summary ---
@@ -1046,7 +858,7 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     for skill in "${INSTALLED_SKILLS[@]}"; do
         echo -e "  ${SUCCESS}•${NC} ${INFO}$skill${NC}"
     done
-    echo -e "  ${INFO}Location: ${BOLD}$TARGET_DIR${NC}"
+    echo -e "  ${MUTED}Verify with: ${INFO}npx skills list ${SKILLS_GLOBAL_FLAG}${NC}"
     echo ""
 fi
 
@@ -1056,7 +868,7 @@ if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo -e "  ${INFO}1.${NC} ${BOLD}Restart OpenClaw and start a new session${NC} to load new skills"
     echo ""
     echo -e "  ${INFO}2.${NC} ${BOLD}Test the skills:${NC}"
-    
+
     for skill in "${INSTALLED_SKILLS[@]}"; do
         case "$skill" in
             "sunswap")
