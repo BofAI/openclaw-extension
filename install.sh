@@ -95,7 +95,7 @@ node_json_merge() {
     local env_json="$2"
     local config_file="$3"
 
-    MCP_FILE="$config_file" SERVER_ID="$server_id" ENV_JSON="$env_json" node -e '
+    MCP_FILE="$config_file" SERVER_ID="$server_id" ENV_JSON="$env_json" node --input-type=commonjs -e '
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 const sid = process.env.SERVER_ID;
@@ -122,11 +122,11 @@ node_json_write() {
     local file_path="$1"
     local json_content="$2"
 
-    FILE_PATH="$file_path" JSON_CONTENT="$json_content" node -e '
+    FILE_PATH="$file_path" JSON_CONTENT="$json_content" node --input-type=commonjs -e '
 const _fs = require("fs");
-const path = require("path");
+const _path = require("path");
 const f = process.env.FILE_PATH;
-const dir = path.dirname(f);
+const dir = _path.dirname(f);
 if (!_fs.existsSync(dir)) _fs.mkdirSync(dir, { recursive: true });
 const data = JSON.parse(process.env.JSON_CONTENT);
 _fs.writeFileSync(f, JSON.stringify(data, null, 2));
@@ -137,7 +137,7 @@ node_json_read() {
     local file_path="$1"
     local key="$2"
 
-    FILE_PATH="$file_path" JSON_KEY="$key" node -e '
+    FILE_PATH="$file_path" JSON_KEY="$key" node --input-type=commonjs -e '
 const _fs = require("fs");
 const f = process.env.FILE_PATH;
 const k = process.env.JSON_KEY;
@@ -154,7 +154,7 @@ try {
 node_json_reset_mcp() {
     local config_file="$1"
 
-    MCP_FILE="$config_file" node -e '
+    MCP_FILE="$config_file" node --input-type=commonjs -e '
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 let d = {};

@@ -96,7 +96,7 @@ function Merge-NodeJson {
     $env:MCP_FILE = $ConfigFile
     $env:SERVER_ID = $ServerId
     $env:ENV_JSON = $EnvJson
-    node -e @'
+    node --input-type=commonjs -e @'
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 const sid = process.env.SERVER_ID;
@@ -129,11 +129,11 @@ function Write-NodeJson {
     )
     $env:FILE_PATH = $FilePath
     $env:JSON_CONTENT = $JsonContent
-    node -e @'
+    node --input-type=commonjs -e @'
 const _fs = require("fs");
-const path = require("path");
+const _path = require("path");
 const f = process.env.FILE_PATH;
-const dir = path.dirname(f);
+const dir = _path.dirname(f);
 if (!_fs.existsSync(dir)) _fs.mkdirSync(dir, { recursive: true });
 const data = JSON.parse(process.env.JSON_CONTENT);
 _fs.writeFileSync(f, JSON.stringify(data, null, 2));
@@ -149,7 +149,7 @@ function Read-NodeJson {
     )
     $env:FILE_PATH = $FilePath
     $env:JSON_KEY = $Key
-    $result = node -e @'
+    $result = node --input-type=commonjs -e @'
 const _fs = require("fs");
 const f = process.env.FILE_PATH;
 const k = process.env.JSON_KEY;
@@ -171,7 +171,7 @@ function Reset-NodeJsonMcp {
         [string]$ConfigFile
     )
     $env:MCP_FILE = $ConfigFile
-    node -e @'
+    node --input-type=commonjs -e @'
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 let d = {};
@@ -851,7 +851,7 @@ try {
                         if (-not $bnbLogLevel) { $bnbLogLevel = "INFO" }
                         $env:BNB_PRIVATE_KEY = if ($bnbKey) { $bnbKey } else { "" }
                         $env:BNB_LOG = $bnbLogLevel
-                        $envJson = node -e @'
+                        $envJson = node --input-type=commonjs -e @'
 const d = {};
 if (process.env.BNB_PRIVATE_KEY) d.PRIVATE_KEY = process.env.BNB_PRIVATE_KEY;
 d.LOG_LEVEL = process.env.BNB_LOG;
@@ -935,7 +935,7 @@ console.log(JSON.stringify(d));
 
     $env:BEFORE = $beforeSkills
     $env:AFTER = $afterSkills
-    $installedRaw = node -e @'
+    $installedRaw = node --input-type=commonjs -e @'
 const before = new Set(JSON.parse(process.env.BEFORE).map(s => s.name || s.skill || s));
 const after = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
 after.filter(s => !before.has(s)).forEach(s => console.log(s));
