@@ -96,7 +96,7 @@ function Merge-NodeJson {
     $env:MCP_FILE = $ConfigFile
     $env:SERVER_ID = $ServerId
     $env:ENV_JSON = $EnvJson
-    node --input-type=commonjs -e @'
+    @'
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 const sid = process.env.SERVER_ID;
@@ -116,7 +116,7 @@ for (const [k, v] of Object.entries(envData)) {
     }
 }
 _fs.writeFileSync(f, JSON.stringify(d, null, 2));
-'@
+'@ | node --input-type=commonjs
     Remove-Item Env:\MCP_FILE -ErrorAction SilentlyContinue
     Remove-Item Env:\SERVER_ID -ErrorAction SilentlyContinue
     Remove-Item Env:\ENV_JSON -ErrorAction SilentlyContinue
@@ -129,7 +129,7 @@ function Write-NodeJson {
     )
     $env:FILE_PATH = $FilePath
     $env:JSON_CONTENT = $JsonContent
-    node --input-type=commonjs -e @'
+    @'
 const _fs = require("fs");
 const _path = require("path");
 const f = process.env.FILE_PATH;
@@ -137,7 +137,7 @@ const dir = _path.dirname(f);
 if (!_fs.existsSync(dir)) _fs.mkdirSync(dir, { recursive: true });
 const data = JSON.parse(process.env.JSON_CONTENT);
 _fs.writeFileSync(f, JSON.stringify(data, null, 2));
-'@
+'@ | node --input-type=commonjs
     Remove-Item Env:\FILE_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:\JSON_CONTENT -ErrorAction SilentlyContinue
 }
@@ -149,7 +149,7 @@ function Read-NodeJson {
     )
     $env:FILE_PATH = $FilePath
     $env:JSON_KEY = $Key
-    $result = node --input-type=commonjs -e @'
+    $result = @'
 const _fs = require("fs");
 const f = process.env.FILE_PATH;
 const k = process.env.JSON_KEY;
@@ -160,7 +160,7 @@ try {
 } catch(e) {
     process.stdout.write("");
 }
-'@
+'@ | node --input-type=commonjs
     Remove-Item Env:\FILE_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:\JSON_KEY -ErrorAction SilentlyContinue
     return $result
@@ -171,7 +171,7 @@ function Reset-NodeJsonMcp {
         [string]$ConfigFile
     )
     $env:MCP_FILE = $ConfigFile
-    node --input-type=commonjs -e @'
+    @'
 const _fs = require("fs");
 const f = process.env.MCP_FILE;
 let d = {};
@@ -180,7 +180,7 @@ if (_fs.existsSync(f)) {
 }
 d.mcpServers = {};
 _fs.writeFileSync(f, JSON.stringify(d, null, 2));
-'@
+'@ | node --input-type=commonjs
     Remove-Item Env:\MCP_FILE -ErrorAction SilentlyContinue
 }
 
@@ -851,7 +851,7 @@ try {
                         if (-not $bnbLogLevel) { $bnbLogLevel = "INFO" }
                         $env:BNB_PRIVATE_KEY = if ($bnbKey) { $bnbKey } else { "" }
                         $env:BNB_LOG = $bnbLogLevel
-                        $envJson = node --input-type=commonjs -e @'
+                        $envJson = node -e @'
 const d = {};
 if (process.env.BNB_PRIVATE_KEY) d.PRIVATE_KEY = process.env.BNB_PRIVATE_KEY;
 d.LOG_LEVEL = process.env.BNB_LOG;
@@ -935,7 +935,7 @@ console.log(JSON.stringify(d));
 
     $env:BEFORE = $beforeSkills
     $env:AFTER = $afterSkills
-    $installedRaw = node --input-type=commonjs -e @'
+    $installedRaw = node -e @'
 const before = new Set(JSON.parse(process.env.BEFORE).map(s => s.name || s.skill || s));
 const after = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
 after.filter(s => !before.has(s)).forEach(s => console.log(s));
