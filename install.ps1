@@ -373,17 +373,18 @@ function Test-Environment {
     # Check Node.js
     $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
     if (-not $nodeCmd) {
-        Write-Host "${script:ERROR_CLR}Error: Node.js is not installed.${script:NC}"
-        exit 1
+        throw "Node.js is not installed. Please install Node.js v18+ from https://nodejs.org/"
     }
     # Check Node.js version >= 18
     try {
         $nodeVersion = (node --version) -replace '^v', ''
         $major = [int]($nodeVersion -split '\.')[0]
         if ($major -lt 18) {
-            Write-Host "${script:ERROR_CLR}Error: Node.js v18+ is required (found v${nodeVersion}).${script:NC}"
-            exit 1
+            throw "Node.js v18+ is required (found v${nodeVersion})."
         }
+    }
+    catch [System.Management.Automation.RuntimeException] {
+        throw
     }
     catch {
         Write-Host "${script:WARN}Warning: Could not determine Node.js version.${script:NC}"
@@ -391,14 +392,12 @@ function Test-Environment {
 
     # Check npx
     if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
-        Write-Host "${script:ERROR_CLR}Error: 'npx' is not found.${script:NC}"
-        exit 1
+        throw "'npx' is not found. It should come with Node.js — try reinstalling Node.js."
     }
 
     # Check git
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Host "${script:ERROR_CLR}Error: git is not installed.${script:NC}"
-        exit 1
+        throw "git is not installed. Please install Git from https://git-scm.com/"
     }
 
     # Check OpenClaw
@@ -411,7 +410,7 @@ function Test-Environment {
         Write-Host "${script:INFO}?${script:NC} Continue anyway? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
         $continueChoice = Read-Host
         if ($continueChoice -notmatch '^[Yy]$') {
-            exit 0
+            return
         }
     }
 }
@@ -507,9 +506,8 @@ function Install-AgentWalletCli {
         npm install -g "@bankofai/agent-wallet@$($script:AgentWalletVersion)"
     }
     catch {
-        Write-Host "${script:ERROR_CLR}Error: Failed to install AgentWallet CLI $($script:AgentWalletVersion).${script:NC}"
         Write-Host "${script:INFO}Try manually: npm install -g @bankofai/agent-wallet@$($script:AgentWalletVersion)${script:NC}"
-        exit 1
+        throw "Failed to install AgentWallet CLI $($script:AgentWalletVersion)."
     }
 
     # Verify
@@ -526,8 +524,7 @@ function Install-AgentWalletCli {
     catch {}
 
     if ($currentVersion -ne $script:AgentWalletVersion) {
-        Write-Host "${script:ERROR_CLR}Error: Expected AgentWallet $($script:AgentWalletVersion), but got '$currentVersion'.${script:NC}"
-        exit 1
+        throw "Expected AgentWallet $($script:AgentWalletVersion), but got '$currentVersion'."
     }
 }
 
@@ -562,8 +559,7 @@ function Initialize-AgentWallet {
             Invoke-AgentWallet start --override --save-runtime-secrets
         }
         catch {
-            Write-Host "${script:ERROR_CLR}AgentWallet initialization failed in CLEAN mode.${script:NC}"
-            exit 1
+            throw "AgentWallet initialization failed in CLEAN mode."
         }
     }
     else {
@@ -574,8 +570,7 @@ function Initialize-AgentWallet {
             Invoke-AgentWallet start --save-runtime-secrets
         }
         catch {
-            Write-Host "${script:ERROR_CLR}AgentWallet initialization failed.${script:NC}"
-            exit 1
+            throw "AgentWallet initialization failed."
         }
     }
 
@@ -1021,7 +1016,18 @@ after.filter(s => !before.has(s)).forEach(s => console.log(s));
     Write-Host "${script:MUTED}Skills: https://github.com/BofAI/skills${script:NC}"
     Write-Host ""
 }
+catch {
+    Write-Host ""
+    Write-Host "${script:ERROR_CLR}${script:BOLD}Installation failed with error:${script:NC}" -ErrorAction SilentlyContinue
+    Write-Host "${script:ERROR_CLR}$($_.Exception.Message)${script:NC}" -ErrorAction SilentlyContinue
+    Write-Host "${script:MUTED}$($_.ScriptStackTrace)${script:NC}" -ErrorAction SilentlyContinue
+    Write-Host ""
+}
 finally {
     # Cleanup: restore cursor visibility
     try { [Console]::CursorVisible = $true } catch {}
+    # Pause so the user can read output when launched via .bat or double-click
+    Write-Host ""
+    Write-Host "Press any key to exit..." -NoNewline
+    try { $null = [Console]::ReadKey($true) } catch { Read-Host }
 }
