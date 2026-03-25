@@ -26,7 +26,7 @@ fi
 
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
-AGENT_WALLET_VERSION="2.3.0"
+AGENT_WALLET_VERSION="2.3.1-beta.0"
 SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.0"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
