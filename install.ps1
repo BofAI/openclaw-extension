@@ -117,6 +117,7 @@ for (const [k, v] of Object.entries(envData)) {
 }
 _fs.writeFileSync(f, JSON.stringify(d, null, 2));
 '@ | node --input-type=commonjs
+    if ($LASTEXITCODE -ne 0) { throw "Merge-NodeJson failed for server '$ServerId'." }
     Remove-Item Env:\MCP_FILE -ErrorAction SilentlyContinue
     Remove-Item Env:\SERVER_ID -ErrorAction SilentlyContinue
     Remove-Item Env:\ENV_JSON -ErrorAction SilentlyContinue
@@ -138,6 +139,7 @@ if (!_fs.existsSync(dir)) _fs.mkdirSync(dir, { recursive: true });
 const data = JSON.parse(process.env.JSON_CONTENT);
 _fs.writeFileSync(f, JSON.stringify(data, null, 2));
 '@ | node --input-type=commonjs
+    if ($LASTEXITCODE -ne 0) { throw "Write-NodeJson failed for '$FilePath'." }
     Remove-Item Env:\FILE_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:\JSON_CONTENT -ErrorAction SilentlyContinue
 }
@@ -161,6 +163,7 @@ try {
     process.stdout.write("");
 }
 '@ | node --input-type=commonjs
+    if ($LASTEXITCODE -ne 0) { throw "Read-NodeJson failed for '$FilePath'." }
     Remove-Item Env:\FILE_PATH -ErrorAction SilentlyContinue
     Remove-Item Env:\JSON_KEY -ErrorAction SilentlyContinue
     return $result
@@ -181,6 +184,7 @@ if (_fs.existsSync(f)) {
 d.mcpServers = {};
 _fs.writeFileSync(f, JSON.stringify(d, null, 2));
 '@ | node --input-type=commonjs
+    if ($LASTEXITCODE -ne 0) { throw "Reset-NodeJsonMcp failed." }
     Remove-Item Env:\MCP_FILE -ErrorAction SilentlyContinue
 }
 
@@ -403,15 +407,9 @@ function Test-Environment {
     # Check OpenClaw
     $openclawDir = Join-Path $env:USERPROFILE ".openclaw"
     if (-not (Test-Path $openclawDir -PathType Container)) {
-        Write-Host "${script:WARN}Warning: OpenClaw doesn't appear to be installed.${script:NC}"
-        Write-Host "${script:WARN}This installer requires OpenClaw to be installed first.${script:NC}"
+        Write-Host "${script:ERROR_CLR}Error: OpenClaw is not installed.${script:NC}"
         Write-Host "${script:INFO}Install OpenClaw from: https://github.com/openclaw${script:NC}"
-        Write-Host ""
-        Write-Host "${script:INFO}?${script:NC} Continue anyway? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
-        $continueChoice = Read-Host
-        if ($continueChoice -notmatch '^[Yy]$') {
-            return
-        }
+        throw "OpenClaw is required. Install it first, then re-run this installer."
     }
 }
 
@@ -610,6 +608,7 @@ function Set-BankOfAiApiKeyConfig {
     if ($bankofaiApiKey) {
         $env:BANKOFAI_API_KEY = $bankofaiApiKey
         $jsonContent = node -e 'const k = process.env.BANKOFAI_API_KEY; console.log(JSON.stringify({ api_key: k, base_url: "https://chat.ainft.com" }));'
+        if ($LASTEXITCODE -ne 0) { throw "Failed to generate BANK OF AI config JSON." }
         Remove-Item Env:\BANKOFAI_API_KEY -ErrorAction SilentlyContinue
         Write-NodeJson -FilePath $bankofaiConfig -JsonContent $jsonContent
         Set-FileOwnerOnly -FilePath $bankofaiConfig
@@ -689,6 +688,7 @@ function Set-X402GasfreeConfig {
             $env:GASFREE_KEY = $gasfreeApiKey
             $env:GASFREE_SECRET = $gasfreeApiSecret
             $jsonContent = node -e 'console.log(JSON.stringify({ gasfree_api_key: process.env.GASFREE_KEY, gasfree_api_secret: process.env.GASFREE_SECRET }));'
+            if ($LASTEXITCODE -ne 0) { throw "Failed to generate Gasfree config JSON." }
             Remove-Item Env:\GASFREE_KEY -ErrorAction SilentlyContinue
             Remove-Item Env:\GASFREE_SECRET -ErrorAction SilentlyContinue
             Write-NodeJson -FilePath $x402Config -JsonContent $jsonContent
@@ -795,10 +795,8 @@ try {
                     $tronApiKey = Read-UserInput -Prompt "Enter TRONGRID_API_KEY" -IsSecret $true -Description "Optional but recommended for reliable network access."
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
-                    try {
-                        npx.cmd -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
-                    }
-                    catch {
+                    npx.cmd -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
+                    if ($LASTEXITCODE -ne 0) {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add mcp-server-tron via npx add-mcp${script:NC}"
                         continue
                     }
@@ -806,6 +804,7 @@ try {
                     if ($tronApiKey) {
                         $env:TRON_KEY = $tronApiKey
                         $envJson = node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))'
+                        if ($LASTEXITCODE -ne 0) { throw "Failed to generate TRON env JSON." }
                         Remove-Item Env:\TRON_KEY -ErrorAction SilentlyContinue
                         Merge-NodeJson -ServerId "mcp-server-tron" -EnvJson $envJson -ConfigFile $script:McpConfigFile
                     }
@@ -823,10 +822,8 @@ try {
 
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
-                    try {
-                        npx.cmd -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1
-                    }
-                    catch {
+                    npx.cmd -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1
+                    if ($LASTEXITCODE -ne 0) {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bnbchain-mcp via npx add-mcp${script:NC}"
                         continue
                     }
@@ -847,16 +844,15 @@ if (process.env.BNB_PRIVATE_KEY) d.PRIVATE_KEY = process.env.BNB_PRIVATE_KEY;
 d.LOG_LEVEL = process.env.BNB_LOG;
 console.log(JSON.stringify(d));
 '@
+                        if ($LASTEXITCODE -ne 0) { throw "Failed to generate BNB env JSON." }
                         Remove-Item Env:\BNB_PRIVATE_KEY -ErrorAction SilentlyContinue
                         Remove-Item Env:\BNB_LOG -ErrorAction SilentlyContinue
                         Merge-NodeJson -ServerId "bnbchain-mcp" -EnvJson $envJson -ConfigFile $script:McpConfigFile
                     }
                 }
                 "bankofai-recharge" {
-                    try {
-                        npx.cmd -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1
-                    }
-                    catch {
+                    npx.cmd -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1
+                    if ($LASTEXITCODE -ne 0) {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bankofai-recharge via npx add-mcp${script:NC}"
                         continue
                     }
@@ -866,8 +862,13 @@ console.log(JSON.stringify(d));
             Write-Host "${script:SUCCESS}$([char]0x2713) Configuration saved for $serverId.${script:NC}"
         }
 
-        # Secure mcporter.json
-        Set-FileOwnerOnly -FilePath $script:McpConfigFile
+        # Secure mcporter.json (only if it was created)
+        if (Test-Path $script:McpConfigFile) {
+            Set-FileOwnerOnly -FilePath $script:McpConfigFile
+        } else {
+            Write-Host "${script:WARN}Warning: MCP config file was not created: $($script:McpConfigFile)${script:NC}"
+            Write-Host "${script:WARN}MCP server installation may have failed. Check the output above.${script:NC}"
+        }
     }
 
     # --- Step 2: Skills Installation ---
@@ -912,7 +913,11 @@ console.log(JSON.stringify(d));
 
     $skillsArgs = @("-y", "skills@1.4.6", "add", $script:SkillsRepo, "-a", "openclaw")
     if ($script:SkillsGlobalFlag) { $skillsArgs += $script:SkillsGlobalFlag }
-    try { & npx.cmd @skillsArgs 2>&1 } catch {}
+    & npx.cmd @skillsArgs 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "${script:ERROR_CLR}$([char]0x2717) Skills installation failed. You can try manually:${script:NC}"
+        Write-Host "${script:INFO}  npx -y skills@1.4.6 add $($script:SkillsRepo) -a openclaw${script:NC}"
+    }
     Write-Host ""
 
     # Snapshot after and find newly installed skills

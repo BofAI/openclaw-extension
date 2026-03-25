@@ -54,7 +54,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI v2.3.0** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
+- **AgentWallet CLI v2.3.1-beta.0** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 - **Windows only**: PowerShell 5.1+ (included with Windows 10/11)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.

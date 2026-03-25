@@ -56,7 +56,7 @@ Get-Content install.ps1 -Raw | Invoke-Expression
 The installer runs in phases:
 
 1. **Mode selection** — Normal (preserve existing config) or Clean (wipe MCP/skills/config with explicit confirmation).
-2. **AgentWallet setup** — Launches `agent-wallet` CLI (default v2.3.0) to provision a managed wallet. Clean mode uses `--override`.
+2. **AgentWallet setup** — Launches `agent-wallet` CLI (default v2.3.1-beta.0) to provision a managed wallet. Clean mode uses `--override`.
 3. **MCP server configuration** — Interactive multiselect; uses `npx add-mcp` to register servers with mcporter. Servers:
    - `@bankofai/mcp-server-tron@1.1.7` — TRON blockchain (pinned version)
    - `@bnb-chain/mcp@latest` — BNB Chain (uses raw `PRIVATE_KEY`, not AgentWallet-managed)
@@ -88,14 +88,14 @@ The installer runs in phases:
 - Node.js v18+
 - Git
 - OpenClaw (pre-installed)
-- AgentWallet CLI v2.3.0
+- AgentWallet CLI v2.3.1-beta.0
 - **Windows only**: PowerShell 5.1+ (included with Windows 10/11), Windows 10 build 1511+ for ANSI color support
 
 ### Pinned Versions
 
 | Component | Version |
 |-----------|---------|
-| AgentWallet | 2.3.0 |
+| AgentWallet | 2.3.1-beta.0 |
 | Skills repo | BofAI/skills (via npx skills add) |
 | mcp-server-tron | 1.1.7 |
 | add-mcp | 1.5.1 (via npx) |
@@ -108,7 +108,7 @@ The installer runs in phases:
 ## Active Technologies
 - Bash (POSIX-compatible with bashisms) + `add-mcp@1.5.1` (via npx), `skills@1.4.6` (via npx), Node.js v18+ (001-npx-skill-mcp-add)
 - JSON config files (`~/.mcporter/mcporter.json`, `~/.x402-config.json`, `~/.mcporter/bankofai-config.json`) (001-npx-skill-mcp-add)
-- PowerShell 5.1+ (ships with Windows 10/11), cmd batch for launcher + Node.js v18+ (npx), Git, AgentWallet CLI v2.3.0, add-mcp@1.5.1, skills@1.4.6 (002-windows-installer)
+- PowerShell 5.1+ (ships with Windows 10/11), cmd batch for launcher + Node.js v18+ (npx), Git, AgentWallet CLI v2.3.1-beta.0, add-mcp@1.5.1, skills@1.4.6 (002-windows-installer)
 - JSON config files in `%USERPROFILE%\.mcporter\` and `%USERPROFILE%\` (002-windows-installer)
 
 ## Recent Changes
