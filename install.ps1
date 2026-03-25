@@ -33,16 +33,19 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
 $script:VTEnabled = Enable-VirtualTerminal
 
+# Use [char]27 for ESC - compatible with PowerShell 5.1+ (Win10 built-in)
+$script:ESC = [char]27
+
 if ($script:VTEnabled) {
-    $script:BOLD       = "`e[1m"
-    $script:ACCENT     = "`e[38;2;255;90;45m"
-    $script:ACCENT_DIM = "`e[38;2;209;74;34m"
-    $script:INFO       = "`e[38;2;0;145;255m"
-    $script:SUCCESS    = "`e[38;2;0;200;83m"
-    $script:WARN       = "`e[38;2;255;171;0m"
-    $script:ERROR_CLR  = "`e[38;2;211;47;47m"
-    $script:MUTED      = "`e[38;2;128;128;128m"
-    $script:NC         = "`e[0m"
+    $script:BOLD       = "$($script:ESC)[1m"
+    $script:ACCENT     = "$($script:ESC)[38;2;255;90;45m"
+    $script:ACCENT_DIM = "$($script:ESC)[38;2;209;74;34m"
+    $script:INFO       = "$($script:ESC)[38;2;0;145;255m"
+    $script:SUCCESS    = "$($script:ESC)[38;2;0;200;83m"
+    $script:WARN       = "$($script:ESC)[38;2;255;171;0m"
+    $script:ERROR_CLR  = "$($script:ESC)[38;2;211;47;47m"
+    $script:MUTED      = "$($script:ESC)[38;2;128;128;128m"
+    $script:NC         = "$($script:ESC)[0m"
 }
 else {
     $script:BOLD       = ""
@@ -276,7 +279,7 @@ function Show-MultiSelect {
                 }
 
                 if ($i -eq $current) {
-                    $pointer = "${script:ACCENT}`u{276F} ${script:NC}"
+                    $pointer = "${script:ACCENT}$([char]0x276F) ${script:NC}"
                     $color = $script:ACCENT
                     if ($selected[$i]) {
                         $checkbox = "${script:ACCENT}[x]${script:NC}"
@@ -423,11 +426,11 @@ function Invoke-CleanInstall {
     Write-Host "${script:ERROR_CLR}${script:BOLD}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!${script:NC}"
     Write-Host ""
     Write-Host "${script:WARN}The following data will be permanently deleted:${script:NC}"
-    Write-Host "  ${script:WARN}`u{2022}${script:NC} ALL MCP entries in: ${script:INFO}$($script:McpConfigFile)${script:NC}"
-    Write-Host "  ${script:WARN}`u{2022}${script:NC} ALL installed skills (global and workspace)"
-    Write-Host "  ${script:WARN}`u{2022}${script:NC} x402 config file: ${script:INFO}$(Join-Path $env:USERPROFILE '.x402-config.json')${script:NC}"
-    Write-Host "  ${script:WARN}`u{2022}${script:NC} BANK OF AI local config: ${script:INFO}$(Join-Path $env:USERPROFILE '.mcporter\bankofai-config.json')${script:NC}"
-    Write-Host "  ${script:WARN}`u{2022}${script:NC} AgentWallet config will be overwritten by: ${script:INFO}agent-wallet start --override --save-runtime-secrets${script:NC}"
+    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} ALL MCP entries in: ${script:INFO}$($script:McpConfigFile)${script:NC}"
+    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} ALL installed skills (global and workspace)"
+    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} x402 config file: ${script:INFO}$(Join-Path $env:USERPROFILE '.x402-config.json')${script:NC}"
+    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} BANK OF AI local config: ${script:INFO}$(Join-Path $env:USERPROFILE '.mcporter\bankofai-config.json')${script:NC}"
+    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} AgentWallet config will be overwritten by: ${script:INFO}agent-wallet start --override --save-runtime-secrets${script:NC}"
     Write-Host ""
     Write-Host "${script:ERROR_CLR}?${script:NC} Continue with CLEAN install? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
     $cleanConfirm = Read-Host
@@ -452,7 +455,7 @@ function Invoke-CleanInstall {
     try { npx -y skills remove -a openclaw --all -y 2>$null } catch {}
     Remove-Item (Join-Path $env:USERPROFILE ".x402-config.json") -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $env:USERPROFILE ".mcporter\bankofai-config.json") -ErrorAction SilentlyContinue
-    Write-Host "${script:SUCCESS}`u{2713} Clean install cleanup completed.${script:NC}"
+    Write-Host "${script:SUCCESS}$([char]0x2713) Clean install cleanup completed.${script:NC}"
     Write-Host ""
 }
 
@@ -577,7 +580,7 @@ function Initialize-AgentWallet {
     }
 
     Write-Host ""
-    Write-Host "${script:SUCCESS}`u{2713} AgentWallet setup completed${script:NC}"
+    Write-Host "${script:SUCCESS}$([char]0x2713) AgentWallet setup completed${script:NC}"
     Write-Host ""
 }
 
@@ -598,7 +601,7 @@ function Set-BankOfAiApiKeyConfig {
     }
 
     if ($hasKey) {
-        Write-Host "${script:SUCCESS}`u{2713} BANK OF AI API key already configured${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713) BANK OF AI API key already configured${script:NC}"
         Write-Host "${script:MUTED}  Config: $bankofaiConfig${script:NC}"
         Write-Host ""
         Write-Host "${script:INFO}?${script:NC} Reconfigure BANK OF AI API key? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
@@ -625,7 +628,7 @@ function Set-BankOfAiApiKeyConfig {
         Remove-Item Env:\BANKOFAI_API_KEY -ErrorAction SilentlyContinue
         Write-NodeJson -FilePath $bankofaiConfig -JsonContent $jsonContent
         Set-FileOwnerOnly -FilePath $bankofaiConfig
-        Write-Host "${script:SUCCESS}`u{2713} BANK OF AI config saved to $bankofaiConfig${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713) BANK OF AI config saved to $bankofaiConfig${script:NC}"
         Write-Host "${script:MUTED}  File permissions: owner read/write only${script:NC}"
     }
     else {
@@ -644,7 +647,7 @@ function Set-TronscanApiKeyConfig {
     Write-Host ""
 
     if ($env:TRONSCAN_API_KEY) {
-        Write-Host "${script:SUCCESS}`u{2713} TRONSCAN_API_KEY already set in environment${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713) TRONSCAN_API_KEY already set in environment${script:NC}"
         Write-Host ""
         return
     }
@@ -671,7 +674,7 @@ function Set-X402GasfreeConfig {
 
         if ($gasfreeKey -and $gasfreeSecret) {
             $hasKeys = "yes"
-            Write-Host "${script:SUCCESS}`u{2713} Gasfree API credentials already configured${script:NC}"
+            Write-Host "${script:SUCCESS}$([char]0x2713) Gasfree API credentials already configured${script:NC}"
             Write-Host "${script:MUTED}  Config: $x402Config${script:NC}"
             Write-Host ""
             Write-Host "${script:INFO}?${script:NC} Reconfigure Gasfree API credentials? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
@@ -705,7 +708,7 @@ function Set-X402GasfreeConfig {
             Remove-Item Env:\GASFREE_SECRET -ErrorAction SilentlyContinue
             Write-NodeJson -FilePath $x402Config -JsonContent $jsonContent
             Set-FileOwnerOnly -FilePath $x402Config
-            Write-Host "${script:SUCCESS}`u{2713} Gasfree API credentials saved to $x402Config${script:NC}"
+            Write-Host "${script:SUCCESS}$([char]0x2713) Gasfree API credentials saved to $x402Config${script:NC}"
             Write-Host "${script:MUTED}  File permissions: owner read/write only${script:NC}"
         }
         else {
@@ -751,7 +754,8 @@ try {
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
     Write-Host "${script:ACCENT}${script:BOLD}"
-    Write-Host "  `u{1F99E} OpenClaw Extension Installer (by BANK OF AI)"
+    $crab = [char]::ConvertFromUtf32(0x1F99E)
+    Write-Host "  $crab OpenClaw Extension Installer (by BANK OF AI)"
     Write-Host "${script:NC}${script:ACCENT_DIM}  $tagline${script:NC}"
     Write-Host ""
 
@@ -810,7 +814,7 @@ try {
                         npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
                     }
                     catch {
-                        Write-Host "${script:ERROR_CLR}`u{2717} Failed to add mcp-server-tron via npx add-mcp${script:NC}"
+                        Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add mcp-server-tron via npx add-mcp${script:NC}"
                         continue
                     }
 
@@ -825,7 +829,7 @@ try {
                     Write-Host "${script:WARN}bnbchain-mcp currently does not support AgentWallet.${script:NC}"
                     Write-Host "${script:WARN}This server still uses PRIVATE_KEY configuration.${script:NC}"
                     Write-Host ""
-                    Write-Host "${script:WARN}`u{26A0} Your PRIVATE_KEY will be stored in plaintext in: ${script:INFO}$($script:McpConfigFile)${script:NC}"
+                    Write-Host "${script:WARN}$([char]0x26A0) Your PRIVATE_KEY will be stored in plaintext in: ${script:INFO}$($script:McpConfigFile)${script:NC}"
                     Write-Host "${script:WARN}  File permissions are set to owner-only, but take care with backups.${script:NC}"
                     Write-Host ""
 
@@ -838,7 +842,7 @@ try {
                         npx -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1
                     }
                     catch {
-                        Write-Host "${script:ERROR_CLR}`u{2717} Failed to add bnbchain-mcp via npx add-mcp${script:NC}"
+                        Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bnbchain-mcp via npx add-mcp${script:NC}"
                         continue
                     }
 
@@ -868,13 +872,13 @@ console.log(JSON.stringify(d));
                         npx -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1
                     }
                     catch {
-                        Write-Host "${script:ERROR_CLR}`u{2717} Failed to add bankofai-recharge via npx add-mcp${script:NC}"
+                        Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bankofai-recharge via npx add-mcp${script:NC}"
                         continue
                     }
                 }
             }
 
-            Write-Host "${script:SUCCESS}`u{2713} Configuration saved for $serverId.${script:NC}"
+            Write-Host "${script:SUCCESS}$([char]0x2713) Configuration saved for $serverId.${script:NC}"
         }
 
         # Secure mcporter.json
@@ -950,7 +954,7 @@ after.filter(s => !before.has(s)).forEach(s => console.log(s));
     }
 
     if ($script:InstalledSkills.Count -gt 0) {
-        Write-Host "${script:SUCCESS}`u{2713} Installed $($script:InstalledSkills.Count) skill(s)${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713) Installed $($script:InstalledSkills.Count) skill(s)${script:NC}"
         Write-Host ""
 
         # Run post-install configuration for each new skill
@@ -964,22 +968,23 @@ after.filter(s => !before.has(s)).forEach(s => console.log(s));
 
     # --- Final Summary ---
     Write-Host ""
-    Write-Host "${script:ACCENT}${script:BOLD}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}${script:NC}"
+    $border = [string]([char]0x2550) * 39
+    Write-Host "${script:ACCENT}${script:BOLD}$border${script:NC}"
     Write-Host "${script:ACCENT}${script:BOLD}  Installation Complete!${script:NC}"
-    Write-Host "${script:ACCENT}${script:BOLD}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}`u{2550}${script:NC}"
+    Write-Host "${script:ACCENT}${script:BOLD}$border${script:NC}"
     Write-Host ""
 
     if (-not $script:SkipMcp) {
-        Write-Host "${script:SUCCESS}`u{2713}${script:NC} ${script:BOLD}MCP Server configured${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713)${script:NC} ${script:BOLD}MCP Server configured${script:NC}"
         Write-Host "  ${script:INFO}Config file: ${script:BOLD}$($script:McpConfigFile)${script:NC}"
         Write-Host "  ${script:MUTED}  File permissions: owner read/write only${script:NC}"
         Write-Host ""
     }
 
     if ($script:InstalledSkills.Count -gt 0) {
-        Write-Host "${script:SUCCESS}`u{2713}${script:NC} ${script:BOLD}Installed skills:${script:NC}"
+        Write-Host "${script:SUCCESS}$([char]0x2713)${script:NC} ${script:BOLD}Installed skills:${script:NC}"
         foreach ($skill in $script:InstalledSkills) {
-            Write-Host "  ${script:SUCCESS}`u{2022}${script:NC} ${script:INFO}$skill${script:NC}"
+            Write-Host "  ${script:SUCCESS}$([char]0x2022)${script:NC} ${script:INFO}$skill${script:NC}"
         }
         $verifyCmd = "npx skills list $($script:SkillsGlobalFlag)".Trim()
         Write-Host "  ${script:MUTED}Verify with: ${script:INFO}$verifyCmd${script:NC}"
