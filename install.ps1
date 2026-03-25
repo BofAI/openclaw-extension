@@ -531,7 +531,7 @@ function Invoke-AgentWallet {
         [Parameter(ValueFromRemainingArguments = $true)]
         [string[]]$Arguments
     )
-    & agent-wallet @Arguments
+    & agent-wallet.cmd @Arguments 2>&1
 }
 
 function Initialize-AgentWallet {
@@ -543,20 +543,14 @@ function Initialize-AgentWallet {
 
     if ($script:CleanInstall) {
         Write-Host "${script:INFO}Launching: agent-wallet reset${script:NC}"
-        try {
-            Invoke-AgentWallet reset
-        }
-        catch {
-            Write-Host "${script:WARN}AgentWallet reset skipped or failed; continuing with clean initialization.${script:NC}"
-        }
+        Invoke-AgentWallet reset
+        # reset failure is non-fatal
         Write-Host ""
         Write-Host "${script:INFO}Launching: agent-wallet start --override --save-runtime-secrets${script:NC}"
         Write-Host "${script:MUTED}Please complete initialization in the CLI prompts.${script:NC}"
         Write-Host ""
-        try {
-            Invoke-AgentWallet start --override --save-runtime-secrets
-        }
-        catch {
+        Invoke-AgentWallet start --override --save-runtime-secrets
+        if ($LASTEXITCODE -ne 0) {
             throw "AgentWallet initialization failed in CLEAN mode."
         }
     }
@@ -564,10 +558,8 @@ function Initialize-AgentWallet {
         Write-Host "${script:INFO}Launching: agent-wallet start --save-runtime-secrets${script:NC}"
         Write-Host "${script:MUTED}Please complete initialization in the CLI prompts.${script:NC}"
         Write-Host ""
-        try {
-            Invoke-AgentWallet start --save-runtime-secrets
-        }
-        catch {
+        Invoke-AgentWallet start --save-runtime-secrets
+        if ($LASTEXITCODE -ne 0) {
             throw "AgentWallet initialization failed."
         }
     }
