@@ -391,7 +391,7 @@ function Test-Environment {
     }
 
     # Check npx
-    if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
+    if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) {
         throw "'npx' is not found. It should come with Node.js — try reinstalling Node.js."
     }
 
@@ -450,8 +450,8 @@ function Invoke-CleanInstall {
     Write-Host ""
     Write-Host "${script:INFO}Running cleanup...${script:NC}"
     Reset-NodeJsonMcp -ConfigFile $script:McpConfigFile
-    try { npx -y skills remove -a openclaw --all -y -g 2>$null } catch {}
-    try { npx -y skills remove -a openclaw --all -y 2>$null } catch {}
+    try { npx.cmd -y skills remove -a openclaw --all -y -g 2>$null } catch {}
+    try { npx.cmd -y skills remove -a openclaw --all -y 2>$null } catch {}
     Remove-Item (Join-Path $env:USERPROFILE ".x402-config.json") -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $env:USERPROFILE ".mcporter\bankofai-config.json") -ErrorAction SilentlyContinue
     Write-Host "${script:SUCCESS}$([char]0x2713) Clean install cleanup completed.${script:NC}"
@@ -481,7 +481,7 @@ function Select-InstallMode {
 function Install-AgentWalletCli {
     $currentVersion = ""
     try {
-        $npmListOutput = npm list -g --depth=0 @bankofai/agent-wallet 2>$null
+        $npmListOutput = npm.cmd list -g --depth=0 @bankofai/agent-wallet 2>$null
         if ($npmListOutput) {
             $match = [regex]::Match(($npmListOutput -join "`n"), '@bankofai/agent-wallet@([^\s]+)')
             if ($match.Success) {
@@ -502,10 +502,8 @@ function Install-AgentWalletCli {
         Write-Host "${script:INFO}Installing AgentWallet CLI $($script:AgentWalletVersion)...${script:NC}"
     }
 
-    try {
-        npm install -g "@bankofai/agent-wallet@$($script:AgentWalletVersion)"
-    }
-    catch {
+    npm.cmd install -g "@bankofai/agent-wallet@$($script:AgentWalletVersion)" 2>&1
+    if ($LASTEXITCODE -ne 0) {
         Write-Host "${script:INFO}Try manually: npm install -g @bankofai/agent-wallet@$($script:AgentWalletVersion)${script:NC}"
         throw "Failed to install AgentWallet CLI $($script:AgentWalletVersion)."
     }
@@ -513,7 +511,7 @@ function Install-AgentWalletCli {
     # Verify
     $currentVersion = ""
     try {
-        $npmListOutput = npm list -g --depth=0 @bankofai/agent-wallet 2>$null
+        $npmListOutput = npm.cmd list -g --depth=0 @bankofai/agent-wallet 2>$null
         if ($npmListOutput) {
             $match = [regex]::Match(($npmListOutput -join "`n"), '@bankofai/agent-wallet@([^\s]+)')
             if ($match.Success) {
@@ -806,7 +804,7 @@ try {
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
                     try {
-                        npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
+                        npx.cmd -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
                     }
                     catch {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add mcp-server-tron via npx add-mcp${script:NC}"
@@ -834,7 +832,7 @@ try {
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
                     try {
-                        npx -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1
+                        npx.cmd -y add-mcp -a mcporter -n bnbchain-mcp -g -y "@bnb-chain/mcp@latest" 2>&1
                     }
                     catch {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bnbchain-mcp via npx add-mcp${script:NC}"
@@ -864,7 +862,7 @@ console.log(JSON.stringify(d));
                 }
                 "bankofai-recharge" {
                     try {
-                        npx -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1
+                        npx.cmd -y add-mcp -a mcporter -n bankofai-recharge -g -t http -y "https://recharge.bankofai.io/mcp" 2>&1
                     }
                     catch {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add bankofai-recharge via npx add-mcp${script:NC}"
@@ -911,7 +909,7 @@ console.log(JSON.stringify(d));
     # Snapshot installed skills before
     $beforeSkills = "[]"
     try {
-        $beforeOutput = npx -y "skills@1.4.6" list $script:SkillsGlobalFlag -a openclaw --json 2>$null
+        $beforeOutput = npx.cmd -y "skills@1.4.6" list $script:SkillsGlobalFlag -a openclaw --json 2>$null
         if ($beforeOutput) { $beforeSkills = $beforeOutput -join "" }
     }
     catch {}
@@ -922,13 +920,13 @@ console.log(JSON.stringify(d));
 
     $skillsArgs = @("-y", "skills@1.4.6", "add", $script:SkillsRepo, "-a", "openclaw")
     if ($script:SkillsGlobalFlag) { $skillsArgs += $script:SkillsGlobalFlag }
-    try { & npx @skillsArgs 2>&1 } catch {}
+    try { & npx.cmd @skillsArgs 2>&1 } catch {}
     Write-Host ""
 
     # Snapshot after and find newly installed skills
     $afterSkills = "[]"
     try {
-        $afterOutput = npx -y "skills@1.4.6" list $script:SkillsGlobalFlag -a openclaw --json 2>$null
+        $afterOutput = npx.cmd -y "skills@1.4.6" list $script:SkillsGlobalFlag -a openclaw --json 2>$null
         if ($afterOutput) { $afterSkills = $afterOutput -join "" }
     }
     catch {}
