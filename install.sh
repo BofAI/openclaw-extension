@@ -786,7 +786,11 @@ echo ""
 
 # Snapshot after and find newly installed skills
 AFTER_SKILLS=$(npx -y skills@1.4.6 list $SKILLS_GLOBAL_FLAG -a openclaw --json 2>/dev/null || echo "[]")
-mapfile -t INSTALLED_SKILLS < <(BEFORE="$BEFORE_SKILLS" AFTER="$AFTER_SKILLS" node -e '
+INSTALLED_SKILLS=()
+while IFS= read -r skill_id; do
+    [ -z "$skill_id" ] && continue
+    INSTALLED_SKILLS+=("$skill_id")
+done < <(BEFORE="$BEFORE_SKILLS" AFTER="$AFTER_SKILLS" node -e '
 const before = new Set(JSON.parse(process.env.BEFORE).map(s => s.name || s.skill || s));
 const after = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
 after.filter(s => !before.has(s)).forEach(s => console.log(s));
