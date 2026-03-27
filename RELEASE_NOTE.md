@@ -24,7 +24,7 @@ Clean install now performs a full cleanup before re-initialization:
 ### 3. Pinned Defaults
 The installer now pins:
 - AgentWallet `2.3.0`
-- Skills repository `v1.5.0`
+- Skills repository `v1.5.3`
 - `mcp-server-tron@1.1.7`
 
 ## Installation Summary
