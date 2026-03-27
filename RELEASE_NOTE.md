@@ -32,8 +32,3 @@ The installer now pins:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/tags/v1.4.3/install.sh | bash
 ```
-
-## Configuration Notes
-- `bnbchain-mcp` still uses `PRIVATE_KEY` and is not AgentWallet-compatible.
-- `sunperp` requires `TRON_PRIVATE_KEY`.
-- You can still override the pinned skills branch by exporting `GITHUB_BRANCH` before running the installer.
