@@ -1,7 +1,7 @@
-# Release Notes: OpenClaw Extension v1.4.0
+# Release Notes: OpenClaw Extension v1.4.3
 
-**Date**: March 21, 2026  
-**Version**: 1.4.0
+**Date**: March 28, 2026  
+**Version**: 1.4.3
 
 ## Overview
 
@@ -30,7 +30,7 @@ The installer now pins:
 ## Installation Summary
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/tags/v1.4.3/install.sh | bash
 ```
 
 ## Configuration Notes
