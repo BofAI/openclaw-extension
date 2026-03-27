@@ -38,7 +38,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
-By default, it installs from the pinned skills tag `v1.5.2`. You can still override this with `GITHUB_BRANCH` when needed.
+By default, it installs from the pinned skills tag `v1.5.3`. You can still override this with `GITHUB_BRANCH` when needed.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps

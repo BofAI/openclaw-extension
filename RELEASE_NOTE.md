@@ -1,7 +1,7 @@
-# Release Notes: OpenClaw Extension v1.4.0
+# Release Notes: OpenClaw Extension v1.4.3
 
-**Date**: March 21, 2026  
-**Version**: 1.4.0
+**Date**: March 28, 2026  
+**Version**: 1.4.3
 
 ## Overview
 
@@ -24,16 +24,11 @@ Clean install now performs a full cleanup before re-initialization:
 ### 3. Pinned Defaults
 The installer now pins:
 - AgentWallet `2.3.0`
-- Skills repository `v1.5.0`
+- Skills repository `v1.5.3`
 - `mcp-server-tron@1.1.7`
 
 ## Installation Summary
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/tags/v1.4.3/install.sh | bash
 ```
-
-## Configuration Notes
-- `bnbchain-mcp` still uses `PRIVATE_KEY` and is not AgentWallet-compatible.
-- `sunperp` requires `TRON_PRIVATE_KEY`.
-- You can still override the pinned skills branch by exporting `GITHUB_BRANCH` before running the installer.
