@@ -5,6 +5,16 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-03-28
+
+### Changed
+- **Pinned Skills Release**: Updated skills pin from `v1.5.3` to `v1.5.4`.
+
+## [1.4.3] - 2026-03-28
+
+### Changed
+- **Pinned Skills Release**: Updated skills pin from `v1.5.2` to `v1.5.3`.
+
 ## [1.4.2] - 2026-03-27
 
 ### Changed
