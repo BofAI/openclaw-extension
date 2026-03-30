@@ -791,7 +791,6 @@ try {
 
             switch ($serverId) {
                 "mcp-server-tron" {
-                    Write-Host "${script:INFO}This step configures network access for TRON MCP.${script:NC}"
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
                     npx.cmd -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1

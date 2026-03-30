@@ -679,7 +679,6 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
                  echo -e "${MUTED}Adding MCP server...${NC}"
 
                  if ! npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1; then
