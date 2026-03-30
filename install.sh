@@ -680,7 +680,6 @@ else
         case "$SERVER_ID" in
             "mcp-server-tron")
                  echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
-                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Optional but recommended for reliable network access."
                  echo -e "${MUTED}Adding MCP server...${NC}"
 
                  if ! npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1; then
@@ -688,11 +687,6 @@ else
                      continue
                  fi
 
-                 # Inject TRONGRID_API_KEY env var if provided
-                 if [ -n "${TRON_API_KEY:-}" ]; then
-                     env_json=$(TRON_KEY="$TRON_API_KEY" node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))')
-                     node_json_merge "mcp-server-tron" "$env_json" "$MCP_CONFIG_FILE"
-                 fi
                  ;;
 
             "bnbchain-mcp")

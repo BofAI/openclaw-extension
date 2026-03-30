@@ -792,7 +792,6 @@ try {
             switch ($serverId) {
                 "mcp-server-tron" {
                     Write-Host "${script:INFO}This step configures network access for TRON MCP.${script:NC}"
-                    $tronApiKey = Read-UserInput -Prompt "Enter TRONGRID_API_KEY" -IsSecret $true -Description "Optional but recommended for reliable network access."
                     Write-Host "${script:MUTED}Adding MCP server...${script:NC}"
 
                     npx.cmd -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1
@@ -801,13 +800,6 @@ try {
                         continue
                     }
 
-                    if ($tronApiKey) {
-                        $env:TRON_KEY = $tronApiKey
-                        $envJson = node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))'
-                        if ($LASTEXITCODE -ne 0) { throw "Failed to generate TRON env JSON." }
-                        Remove-Item Env:\TRON_KEY -ErrorAction SilentlyContinue
-                        Merge-NodeJson -ServerId "mcp-server-tron" -EnvJson $envJson -ConfigFile $script:McpConfigFile
-                    }
                 }
                 "bnbchain-mcp" {
                     Write-Host "${script:WARN}bnbchain-mcp currently does not support AgentWallet.${script:NC}"
