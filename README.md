@@ -38,7 +38,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
-By default, it installs from the pinned skills tag `v1.5.4`. You can still override this with `GITHUB_BRANCH` when needed.
+By default, it installs from the pinned skills tag `v1.5.5`. You can still override this with `GITHUB_BRANCH` when needed.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
@@ -53,13 +53,15 @@ For complete documentation and usage instructions, see the [skills repository](h
 ### Prerequisites
 - **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
-- **Python 3** (for configuration helpers)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI v2.3.0** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
+- **AgentWallet CLI v2.3.1** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
+- **Windows only**: PowerShell 5.1+ (included with Windows 10/11)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
 ### Quick Start
+
+#### Linux / macOS
 
 **One-command installation:**
 
@@ -74,6 +76,24 @@ git clone https://github.com/BofAI/openclaw-extension.git
 cd openclaw-extension
 ./install.sh
 ```
+
+#### Windows
+
+**One-command installation (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/BofAI/openclaw-extension/refs/heads/main/install.ps1 | iex
+```
+
+Or from source:
+
+```cmd
+git clone https://github.com/BofAI/openclaw-extension.git
+cd openclaw-extension
+install.bat
+```
+
+> **Note**: Windows requires Windows 10 (build 1511+) or later for ANSI color support. `install.bat` is a thin launcher that invokes `install.ps1` with the correct execution policy — no manual configuration needed.
 
 ### Installer Flow
 
@@ -115,9 +135,9 @@ The installer configures wallet usage through AgentWallet first:
 
 **Option 3: Gasfree API Credentials (for x402-payment)**
 - Used for gasless transactions on TRON via the Gasfree service
-- Stored in `~/.x402-config.json`
+- Stored in `~/.x402-config.json` (Linux/macOS) or `%USERPROFILE%\.x402-config.json` (Windows)
 - The installer will prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` when installing the x402-payment skill
-- Secure the file with `chmod 600 ~/.x402-config.json`
+- File permissions are automatically restricted to owner-only access by the installer
 - Manual configuration:
   ```json
   {

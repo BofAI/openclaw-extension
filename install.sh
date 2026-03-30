@@ -26,8 +26,8 @@ fi
 
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
-AGENT_WALLET_VERSION="2.3.0"
-SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.4"
+AGENT_WALLET_VERSION="2.3.1"
+SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.5"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
 SKILLS_GLOBAL_FLAG=""
@@ -95,14 +95,14 @@ node_json_merge() {
     local env_json="$2"
     local config_file="$3"
 
-    MCP_FILE="$config_file" SERVER_ID="$server_id" ENV_JSON="$env_json" node -e '
-const fs = require("fs");
+    MCP_FILE="$config_file" SERVER_ID="$server_id" ENV_JSON="$env_json" node --input-type=commonjs <<'NODESCRIPT'
+const _fs = require("fs");
 const f = process.env.MCP_FILE;
 const sid = process.env.SERVER_ID;
 const envData = JSON.parse(process.env.ENV_JSON);
 let d = {};
-if (fs.existsSync(f)) {
-    try { d = JSON.parse(fs.readFileSync(f, "utf8")); } catch(e) {}
+if (_fs.existsSync(f)) {
+    try { d = JSON.parse(_fs.readFileSync(f, "utf8")); } catch(e) {}
 }
 if (!d.mcpServers) d.mcpServers = {};
 if (!d.mcpServers[sid]) d.mcpServers[sid] = {};
@@ -114,56 +114,56 @@ for (const [k, v] of Object.entries(envData)) {
         d.mcpServers[sid].env[k] = v;
     }
 }
-fs.writeFileSync(f, JSON.stringify(d, null, 2));
-'
+_fs.writeFileSync(f, JSON.stringify(d, null, 2));
+NODESCRIPT
 }
 
 node_json_write() {
     local file_path="$1"
     local json_content="$2"
 
-    FILE_PATH="$file_path" JSON_CONTENT="$json_content" node -e '
-const fs = require("fs");
-const path = require("path");
+    FILE_PATH="$file_path" JSON_CONTENT="$json_content" node --input-type=commonjs <<'NODESCRIPT'
+const _fs = require("fs");
+const _path = require("path");
 const f = process.env.FILE_PATH;
-const dir = path.dirname(f);
-if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+const dir = _path.dirname(f);
+if (!_fs.existsSync(dir)) _fs.mkdirSync(dir, { recursive: true });
 const data = JSON.parse(process.env.JSON_CONTENT);
-fs.writeFileSync(f, JSON.stringify(data, null, 2));
-'
+_fs.writeFileSync(f, JSON.stringify(data, null, 2));
+NODESCRIPT
 }
 
 node_json_read() {
     local file_path="$1"
     local key="$2"
 
-    FILE_PATH="$file_path" JSON_KEY="$key" node -e '
-const fs = require("fs");
+    FILE_PATH="$file_path" JSON_KEY="$key" node --input-type=commonjs <<'NODESCRIPT'
+const _fs = require("fs");
 const f = process.env.FILE_PATH;
 const k = process.env.JSON_KEY;
 try {
-    const d = JSON.parse(fs.readFileSync(f, "utf8"));
+    const d = JSON.parse(_fs.readFileSync(f, "utf8"));
     const v = d[k];
     process.stdout.write(v ? String(v) : "");
 } catch(e) {
     process.stdout.write("");
 }
-'
+NODESCRIPT
 }
 
 node_json_reset_mcp() {
     local config_file="$1"
 
-    MCP_FILE="$config_file" node -e '
-const fs = require("fs");
+    MCP_FILE="$config_file" node --input-type=commonjs <<'NODESCRIPT'
+const _fs = require("fs");
 const f = process.env.MCP_FILE;
 let d = {};
-if (fs.existsSync(f)) {
-    try { d = JSON.parse(fs.readFileSync(f, "utf8")); } catch(e) {}
+if (_fs.existsSync(f)) {
+    try { d = JSON.parse(_fs.readFileSync(f, "utf8")); } catch(e) {}
 }
 d.mcpServers = {};
-fs.writeFileSync(f, JSON.stringify(d, null, 2));
-'
+_fs.writeFileSync(f, JSON.stringify(d, null, 2));
+NODESCRIPT
 }
 
 # --- Input Helper ---
