@@ -38,7 +38,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
 The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
-By default, it installs from the pinned skills tag `v1.5.4`. You can still override this with `GITHUB_BRANCH` when needed.
+By default, it installs from the pinned skills tag `v1.5.5`. You can still override this with `GITHUB_BRANCH` when needed.
 
 **Available Skills:**
 - **sunswap** - SunSwap DEX trading skill for TRON token swaps
@@ -54,7 +54,7 @@ For complete documentation and usage instructions, see the [skills repository](h
 - **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
 - **Node.js** (v18+)
 - **Git** (for cloning skills repository)
-- **AgentWallet CLI v2.3.1-beta.0** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
+- **AgentWallet CLI v2.3.1** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 - **Windows only**: PowerShell 5.1+ (included with Windows 10/11)
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.

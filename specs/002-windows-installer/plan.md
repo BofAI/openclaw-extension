@@ -10,7 +10,7 @@ Create a Windows-native installer (`install.ps1` + `install.bat` launcher) that 
 ## Technical Context
 
 **Language/Version**: PowerShell 5.1+ (ships with Windows 10/11), cmd batch for launcher
-**Primary Dependencies**: Node.js v18+ (npx), Git, AgentWallet CLI v2.3.0, add-mcp@1.5.1, skills@1.4.6
+**Primary Dependencies**: Node.js v18+ (npx), Git, AgentWallet CLI v2.3.1, add-mcp@1.5.1, skills@1.4.6
 **Storage**: JSON config files in `%USERPROFILE%\.mcporter\` and `%USERPROFILE%\`
 **Testing**: PowerShell syntax parse check, manual execution test, pipe-install test (`Get-Content install.ps1 -Raw | iex`)
 **Target Platform**: Windows 10 (1511+) and Windows 11, cmd.exe and PowerShell
@@ -29,7 +29,7 @@ Create a Windows-native installer (`install.ps1` + `install.bat` launcher) that 
 | II. Pipe-Install Compatibility | PASS | `irm URL \| iex` supported. `Read-Host` naturally reads from console (not stdin), equivalent to `/dev/tty`. |
 | III. Ecosystem-Standard Tooling | PASS | Same `npx add-mcp` and `npx skills add` commands — cross-platform Node.js tools. |
 | IV. No Python Dependency | PASS | JSON manipulation via `node -e` one-liners, identical approach. |
-| V. Pinned Dependencies | PASS | Same pinned versions: add-mcp@1.5.1, skills@1.4.6, agent-wallet@2.3.0, mcp-server-tron@1.1.7. |
+| V. Pinned Dependencies | PASS | Same pinned versions: add-mcp@1.5.1, skills@1.4.6, agent-wallet@2.3.1, mcp-server-tron@1.1.7. |
 | VI. Credential Security | PASS | `icacls` used to restrict config files to owner-only access (Windows equivalent of chmod 600). Secrets passed via environment variables to `node -e`. |
 
 **Post-Phase-1 Re-check**: All items still pass. The data model confirms identical JSON output. The hybrid approach (bat launcher + ps1 logic) is justified and documented.

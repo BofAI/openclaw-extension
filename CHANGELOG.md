@@ -5,6 +5,13 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2026-03-30
+
+### Changed
+- **AgentWallet Version**: Updated AgentWallet from `2.3.1-beta.0` to `2.3.1`.
+- **Pinned Skills Release**: Updated skills pin from `v1.5.4` to `v1.5.5`.
+- **Windows Installer**: Added `install.ps1` (PowerShell) and `install.bat` (launcher) for Windows support.
+
 ## [1.4.4] - 2026-03-28
 
 ### Changed
