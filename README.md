@@ -37,16 +37,9 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-The installer clones the [skills repository](https://github.com/BofAI/skills) and lets you choose which skills to install during setup.
-By default, it installs from the pinned skills tag `v1.5.5`. You can still override this with `GITHUB_BRANCH` when needed.
+The installer lets you choose which skills to install during setup. By default, it installs from the pinned skills tag `v1.5.7`. You can override this with `GITHUB_BRANCH` when needed.
 
-**Available Skills:**
-- **sunswap** - SunSwap DEX trading skill for TRON token swaps
-- **tronscan-skill** - TRON blockchain data lookup via the TronScan API
-- **x402-payment** - Enables agent payments on TRON network (x402 protocol, with Gasfree support)
-- **recharge-skill** - Local BANK OF AI balance/order queries plus recharge via remote MCP
-
-For complete documentation and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
+For available skills, documentation, and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
 ## 🛠 Installation
 
@@ -132,19 +125,6 @@ The installer configures wallet usage through AgentWallet first:
 
 **bnbchain-mcp Exception**
 - `bnbchain-mcp` currently requires `PRIVATE_KEY` and is not yet AgentWallet-compatible
-
-**Option 3: Gasfree API Credentials (for x402-payment)**
-- Used for gasless transactions on TRON via the Gasfree service
-- Stored in `~/.x402-config.json` (Linux/macOS) or `%USERPROFILE%\.x402-config.json` (Windows)
-- The installer will prompt for `GASFREE_API_KEY` and `GASFREE_API_SECRET` when installing the x402-payment skill
-- File permissions are automatically restricted to owner-only access by the installer
-- Manual configuration:
-  ```json
-  {
-    "gasfree_api_key": "YOUR_KEY",
-    "gasfree_api_secret": "YOUR_SECRET"
-  }
-  ```
 
 ### Best Practices
 

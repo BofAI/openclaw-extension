@@ -27,7 +27,7 @@ fi
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 AGENT_WALLET_VERSION="2.3.1"
-SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.5"
+SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.7"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
 SKILLS_GLOBAL_FLAG=""
@@ -546,78 +546,10 @@ configure_tronscan_api_key() {
     echo ""
 }
 
-configure_x402_gasfree() {
-    echo ""
-    echo -e "${BOLD}Gasfree API Configuration${NC}"
-    echo -e "${MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${NC}"
-    echo ""
-
-    local x402_config="$HOME/.x402-config.json"
-    local has_keys=""
-    local reconfig_gasfree="N"
-
-    # Check if config already exists with valid keys
-    if [ -f "$x402_config" ]; then
-        local gasfree_key
-        local gasfree_secret
-        gasfree_key=$(node_json_read "$x402_config" "gasfree_api_key")
-        gasfree_secret=$(node_json_read "$x402_config" "gasfree_api_secret")
-
-        if [ -n "$gasfree_key" ] && [ -n "$gasfree_secret" ]; then
-            has_keys="yes"
-            echo -e "${SUCCESS}✓ Gasfree API credentials already configured${NC}"
-            echo -e "${MUTED}  Config: $x402_config${NC}"
-            echo ""
-            echo -ne "${INFO}?${NC} Reconfigure Gasfree API credentials? ${MUTED}(y/N)${NC}: "
-            read -r reconfig_gasfree <&3
-            if [[ ! "$reconfig_gasfree" =~ ^[Yy]$ ]]; then
-                echo ""
-                return 0
-            fi
-        fi
-    fi
-
-    # Prompt for credentials if not yet configured or user wants to reconfigure
-    if [ ! -f "$x402_config" ] || [ "${has_keys:-no}" != "yes" ] || [[ "${reconfig_gasfree:-N}" =~ ^[Yy]$ ]]; then
-        echo -ne "${INFO}?${NC} Enter GASFREE_API_KEY ${MUTED}(optional)${NC}: "
-        read -r gasfree_api_key <&3
-
-        echo -ne "${INFO}?${NC} Enter GASFREE_API_SECRET ${MUTED}(optional, hidden)${NC}: "
-        read -rs gasfree_api_secret <&3
-        echo ""
-
-        if [ -n "$gasfree_api_key" ] && [ -n "$gasfree_api_secret" ]; then
-            local json_content
-            json_content=$(GASFREE_KEY="$gasfree_api_key" GASFREE_SECRET="$gasfree_api_secret" node -e '
-console.log(JSON.stringify({ gasfree_api_key: process.env.GASFREE_KEY, gasfree_api_secret: process.env.GASFREE_SECRET }));
-')
-            node_json_write "$x402_config" "$json_content"
-            chmod 600 "$x402_config"
-            echo -e "${SUCCESS}✓ Gasfree API credentials saved to $x402_config${NC}"
-            echo -e "${MUTED}  File permissions: 600 (owner read/write only)${NC}"
-        else
-            echo -e "${WARN}Incomplete credentials, skipping Gasfree configuration${NC}"
-            echo -e "${INFO}Configure later by creating $x402_config:${NC}"
-            echo -e "${MUTED}  {\"gasfree_api_key\": \"YOUR_KEY\", \"gasfree_api_secret\": \"YOUR_SECRET\"}${NC}"
-        fi
-    fi
-
-    echo ""
-}
-
 configure_skill() {
     local skill_id="$1"
 
     case "$skill_id" in
-        "sunperp")
-            echo ""
-            echo -e "${WARN}sunperp depends on TRON_PRIVATE_KEY.${NC}"
-            echo -e "${MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${NC}"
-            echo ""
-            ;;
-        "x402-payment")
-            configure_x402_gasfree
-            ;;
         "recharge-skill")
             configure_bankofai_api_key
             ;;
@@ -679,19 +611,11 @@ else
 
         case "$SERVER_ID" in
             "mcp-server-tron")
-                 echo -e "${INFO}This step configures network access for TRON MCP.${NC}"
-                 ask_input "Enter TRONGRID_API_KEY" TRON_API_KEY 1 "Optional but recommended for reliable network access."
                  echo -e "${MUTED}Adding MCP server...${NC}"
 
                  if ! npx -y add-mcp -a mcporter -n mcp-server-tron -g -y "@bankofai/mcp-server-tron@1.1.7" 2>&1; then
                      echo -e "${ERROR}✗ Failed to add mcp-server-tron via npx add-mcp${NC}"
                      continue
-                 fi
-
-                 # Inject TRONGRID_API_KEY env var if provided
-                 if [ -n "${TRON_API_KEY:-}" ]; then
-                     env_json=$(TRON_KEY="$TRON_API_KEY" node -e 'console.log(JSON.stringify({ TRONGRID_API_KEY: process.env.TRON_KEY }))')
-                     node_json_merge "mcp-server-tron" "$env_json" "$MCP_CONFIG_FILE"
                  fi
                  ;;
 
