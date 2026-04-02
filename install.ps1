@@ -63,7 +63,7 @@ else {
 $script:McpConfigDir  = Join-Path $env:USERPROFILE ".mcporter"
 $script:McpConfigFile = Join-Path $script:McpConfigDir "mcporter.json"
 $script:AgentWalletVersion = "2.3.1"
-$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/v1.5.6"
+$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/1.5.7-beta.0"
 $script:InstalledSkills = @()
 $script:CleanInstall  = $false
 $script:SkillsGlobalFlag = ""
@@ -642,84 +642,11 @@ function Set-TronscanApiKeyConfig {
     Write-Host ""
 }
 
-function Set-X402GasfreeConfig {
-    Write-Host ""
-    Write-Host "${script:BOLD}Gasfree API Configuration${script:NC}"
-    Write-Host "${script:MUTED}x402-payment uses Gasfree API for gasless transactions on TRON${script:NC}"
-    Write-Host ""
-
-    $x402Config = Join-Path $env:USERPROFILE ".x402-config.json"
-    $hasKeys = ""
-    $reconfigGasfree = "N"
-
-    if (Test-Path $x402Config) {
-        $gasfreeKey = Read-NodeJson -FilePath $x402Config -Key "gasfree_api_key"
-        $gasfreeSecret = Read-NodeJson -FilePath $x402Config -Key "gasfree_api_secret"
-
-        if ($gasfreeKey -and $gasfreeSecret) {
-            $hasKeys = "yes"
-            Write-Host "${script:SUCCESS}$([char]0x2713) Gasfree API credentials already configured${script:NC}"
-            Write-Host "${script:MUTED}  Config: $x402Config${script:NC}"
-            Write-Host ""
-            Write-Host "${script:INFO}?${script:NC} Reconfigure Gasfree API credentials? ${script:MUTED}(y/N)${script:NC}: " -NoNewline
-            $reconfigGasfree = Read-Host
-            if ($reconfigGasfree -notmatch '^[Yy]$') {
-                Write-Host ""
-                return
-            }
-        }
-    }
-
-    if ((-not (Test-Path $x402Config)) -or ($hasKeys -ne "yes") -or ($reconfigGasfree -match '^[Yy]$')) {
-        Write-Host "${script:INFO}?${script:NC} Enter GASFREE_API_KEY ${script:MUTED}(optional)${script:NC}: " -NoNewline
-        $gasfreeApiKey = Read-Host
-
-        Write-Host "${script:INFO}?${script:NC} Enter GASFREE_API_SECRET ${script:MUTED}(optional, hidden)${script:NC}: " -NoNewline
-        $secureSecret = Read-Host -AsSecureString
-        $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureSecret)
-        try {
-            $gasfreeApiSecret = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-        }
-        finally {
-            [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-        }
-
-        if ($gasfreeApiKey -and $gasfreeApiSecret) {
-            $env:GASFREE_KEY = $gasfreeApiKey
-            $env:GASFREE_SECRET = $gasfreeApiSecret
-            $jsonContent = node -e 'console.log(JSON.stringify({ gasfree_api_key: process.env.GASFREE_KEY, gasfree_api_secret: process.env.GASFREE_SECRET }));'
-            if ($LASTEXITCODE -ne 0) { throw "Failed to generate Gasfree config JSON." }
-            Remove-Item Env:\GASFREE_KEY -ErrorAction SilentlyContinue
-            Remove-Item Env:\GASFREE_SECRET -ErrorAction SilentlyContinue
-            Write-NodeJson -FilePath $x402Config -JsonContent $jsonContent
-            Set-FileOwnerOnly -FilePath $x402Config
-            Write-Host "${script:SUCCESS}$([char]0x2713) Gasfree API credentials saved to $x402Config${script:NC}"
-            Write-Host "${script:MUTED}  File permissions: owner read/write only${script:NC}"
-        }
-        else {
-            Write-Host "${script:WARN}Incomplete credentials, skipping Gasfree configuration${script:NC}"
-            Write-Host "${script:INFO}Configure later by creating ${x402Config}:${script:NC}"
-            Write-Host "${script:MUTED}  {`"gasfree_api_key`": `"YOUR_KEY`", `"gasfree_api_secret`": `"YOUR_SECRET`"}${script:NC}"
-        }
-    }
-
-    Write-Host ""
-}
-
 function Set-SkillConfig {
     param(
         [string]$SkillId
     )
     switch ($SkillId) {
-        "sunperp" {
-            Write-Host ""
-            Write-Host "${script:WARN}sunperp depends on TRON_PRIVATE_KEY.${script:NC}"
-            Write-Host "${script:MUTED}Please ensure TRON_PRIVATE_KEY is configured before using sunperp.${script:NC}"
-            Write-Host ""
-        }
-        "x402-payment" {
-            Set-X402GasfreeConfig
-        }
         "recharge-skill" {
             Set-BankOfAiApiKeyConfig
         }
