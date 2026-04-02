@@ -725,7 +725,6 @@ try {
                         Write-Host "${script:ERROR_CLR}$([char]0x2717) Failed to add mcp-server-tron via npx add-mcp${script:NC}"
                         continue
                     }
-
                 }
                 "bnbchain-mcp" {
                     Write-Host "${script:WARN}bnbchain-mcp currently does not support AgentWallet.${script:NC}"

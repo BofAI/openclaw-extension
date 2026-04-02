@@ -617,7 +617,6 @@ else
                      echo -e "${ERROR}✗ Failed to add mcp-server-tron via npx add-mcp${NC}"
                      continue
                  fi
-
                  ;;
 
             "bnbchain-mcp")

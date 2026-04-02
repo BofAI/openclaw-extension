@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pinned Skills Release**: Updated skills pin from `v1.5.5` to `v1.5.7`.
 - **Removed TRONGRID API key prompt**: TRON MCP server no longer asks for `TRONGRID_API_KEY` during installation; the key can still be configured manually after install.
 - **Clarified TRON MCP install messaging**: Simplified the TRON MCP server installation output.
-- **Removed Gasfree API prompt**: The `x402-payment` skill no longer prompts for Gasfree API credentials during installation; credentials can be configured manually via `~/.x402-config.json`.
+- **Removed Gasfree API prompt**: The `x402-payment` skill no longer prompts for Gasfree API credentials during installation.
 - **Removed sunperp TRON_PRIVATE_KEY notice**: The installer no longer displays the `TRON_PRIVATE_KEY` dependency warning for sunperp.
 
 ## [1.4.5] - 2026-03-30
