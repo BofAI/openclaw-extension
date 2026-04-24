@@ -5,6 +5,12 @@ All notable changes to the **OpenClaw Extension** project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Pinned Skills Release**: Updated the default installer source to `skills@v1.5.8`.
+- **Skills Documentation**: Updated README and release notes to reflect the current `skills@v1.5.8` skill catalog.
+
 ## [1.4.6] - 2026-04-02
 
 ### Changed
