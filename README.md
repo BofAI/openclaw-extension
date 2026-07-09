@@ -37,19 +37,22 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-The installer lets you choose which skills to install during setup. By default, it installs from the pinned skills tag `v1.5.8`, which matches the current published `skills` release.
+The installer lets you choose which skills to install during setup. By default, it installs from the pinned skills tag `v1.5.14`, which matches the current published `skills` release.
 
-Current skills in `skills@v1.5.8` include:
+Current skills in `skills@v1.5.14` include:
 - `agent-wallet` - Create wallets, inspect addresses, and sign blockchain transactions or messages with the AgentWallet CLI.
 - `bankofai-guide` - Post-install onboarding guide for BofAI skills, including wallet setup and basic guardrails.
 - `multisig-permissions` - Manage TRON multi-sig permissions, thresholds, and co-signed proposals.
 - `recharge-skill` - Query BANK OF AI account state and recharge through the BANK OF AI remote MCP endpoint.
 - `sunperp-skill` - Trade USDT-margined perpetual futures on SunPerp and manage positions on TRON.
+- `sunpump-agent-skill` - Create and trade meme tokens on SunPump, and query token info, rankings, holders, and trade history.
 - `sunswap` - Swap tokens, manage liquidity, and query DEX market data on SunSwap.
 - `trc20-toolkit-skill` - Run generic TRC20 token operations such as transfer, approve, balance, and metadata queries.
 - `tronscan-skill` - Query TRON blockchain data through the TronScan API.
 - `trx-staking-skill` - Stake TRX, vote for Super Representatives, and claim TRON voting rewards.
 - `usdd-skill` - Use USDD / JUST Protocol flows including PSM swaps, vault queries, and balance checks.
+- `twitter-digest` - Generate X/Twitter daily digests, analyzing mentions, home timeline, and reply opportunities.
+- `twitter-mcp` - Install or authorize xurl for X/Twitter and generate digests from the local xurl CLI, with an optional hosted MCP bridge.
 - `x402-payment` - Pay x402-enabled agent endpoints using supported EVM or TRON stablecoins.
 
 For available skills, documentation, and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
