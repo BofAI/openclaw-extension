@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Pinned Skills Release**: Updated the default installer source to `skills@v1.5.8`.
-- **Skills Documentation**: Updated README and release notes to reflect the current `skills@v1.5.8` skill catalog.
+- **Pinned Skills Release**: Updated the default installer source to `skills@v1.5.14`.
+- **Skills Documentation**: Updated README and release notes to reflect the current `skills@v1.5.14` skill catalog.
 
 ## [1.4.6] - 2026-04-02
 

@@ -5,12 +5,12 @@
 
 ## Overview
 
-Pins the installer to the latest published `skills` release tag, `v1.5.8`, so the extension follows the current shipped skill set instead of an unversioned branch. The release also simplifies the installation flow by removing interactive prompts for TRONGRID API key, Gasfree API credentials, and sunperp private key notice.
+Pins the installer to the latest published `skills` release tag, `v1.5.14`, so the extension follows the current shipped skill set instead of an unversioned branch. The release also simplifies the installation flow by removing interactive prompts for TRONGRID API key, Gasfree API credentials, and sunperp private key notice.
 
 ## Changes
 
-- Updated the default skills source to the published release tag `skills@v1.5.8`
-- Updated the documented default skill set to match `skills@v1.5.8`
+- Updated the default skills source to the published release tag `skills@v1.5.14`
+- Updated the documented default skill set to match `skills@v1.5.14`
 - Removed TRONGRID API key prompt from TRON MCP server installation
 - Removed Gasfree API credentials prompt from x402-payment skill setup
 - Removed sunperp `TRON_PRIVATE_KEY` dependency notice
@@ -19,7 +19,7 @@ Pins the installer to the latest published `skills` release tag, `v1.5.8`, so th
 ## Pinned Defaults
 
 - AgentWallet `2.3.1`
-- Skills repository `v1.5.8`
+- Skills repository `v1.5.14`
 - `mcp-server-tron@1.1.7`
 
 ## Installation
