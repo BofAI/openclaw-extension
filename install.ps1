@@ -63,7 +63,8 @@ else {
 $script:McpConfigDir  = Join-Path $env:USERPROFILE ".mcporter"
 $script:McpConfigFile = Join-Path $script:McpConfigDir "mcporter.json"
 $script:AgentWalletVersion = "2.3.1"
-$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/v1.5.14"
+$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/x402-payment-v1.0.1-beta.6"
+$script:X402CliVersion = "1.0.1-beta.6"
 $script:InstalledSkills = @()
 $script:CleanInstall  = $false
 $script:SkillsGlobalFlag = ""
@@ -425,7 +426,6 @@ function Invoke-CleanInstall {
     Write-Host "${script:WARN}The following data will be permanently deleted:${script:NC}"
     Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} ALL MCP entries in: ${script:INFO}$($script:McpConfigFile)${script:NC}"
     Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} ALL installed skills (global and workspace)"
-    Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} x402 config file: ${script:INFO}$(Join-Path $env:USERPROFILE '.x402-config.json')${script:NC}"
     Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} BANK OF AI local config: ${script:INFO}$(Join-Path $env:USERPROFILE '.mcporter\bankofai-config.json')${script:NC}"
     Write-Host "  ${script:WARN}$([char]0x2022)${script:NC} AgentWallet config will be overwritten by: ${script:INFO}agent-wallet start --override --save-runtime-secrets${script:NC}"
     Write-Host ""
@@ -450,7 +450,6 @@ function Invoke-CleanInstall {
     Reset-NodeJsonMcp -ConfigFile $script:McpConfigFile
     try { npx.cmd -y skills remove -a openclaw --all -y -g 2>$null } catch {}
     try { npx.cmd -y skills remove -a openclaw --all -y 2>$null } catch {}
-    Remove-Item (Join-Path $env:USERPROFILE ".x402-config.json") -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $env:USERPROFILE ".mcporter\bankofai-config.json") -ErrorAction SilentlyContinue
     Write-Host "${script:SUCCESS}$([char]0x2713) Clean install cleanup completed.${script:NC}"
     Write-Host ""
@@ -640,6 +639,34 @@ function Set-TronscanApiKeyConfig {
     Write-Host "${script:MUTED}`$env:TRONSCAN_API_KEY = `"your-api-key-here`"${script:NC}"
     Write-Host "${script:MUTED}Get a free key at: https://tronscan.org/#/myaccount/apiKeys${script:NC}"
     Write-Host ""
+}
+
+function Install-X402Cli {
+    $nodeVersion = (node --version) -replace '^v', ''
+    $nodeMajor = [int]($nodeVersion -split '\.')[0]
+    if ($nodeMajor -lt 20) {
+        throw "x402-payment requires Node.js v20+ (found v${nodeVersion}). Upgrade Node.js, then install @bankofai/x402-cli@$($script:X402CliVersion)."
+    }
+
+    $installedVersion = $null
+    if (Get-Command x402-cli.cmd -ErrorAction SilentlyContinue) {
+        $installedVersion = (& x402-cli.cmd --version 2>$null | Select-Object -First 1).Trim()
+    }
+    if ($installedVersion -eq $script:X402CliVersion) {
+        Write-Host "${script:SUCCESS}$([char]0x2713) x402 CLI $($script:X402CliVersion) is already installed${script:NC}"
+        return
+    }
+
+    Write-Host "${script:MUTED}Installing @bankofai/x402-cli@$($script:X402CliVersion)...${script:NC}"
+    & npm.cmd install --global --no-fund --no-audit "@bankofai/x402-cli@$($script:X402CliVersion)"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install @bankofai/x402-cli@$($script:X402CliVersion)."
+    }
+    if (-not (Get-Command x402-cli.cmd -ErrorAction SilentlyContinue)) {
+        throw "x402 CLI was installed but is not available on PATH."
+    }
+    $installedVersion = (& x402-cli.cmd --version | Select-Object -First 1).Trim()
+    Write-Host "${script:SUCCESS}$([char]0x2713) Installed x402 CLI ${installedVersion}${script:NC}"
 }
 
 function Set-SkillConfig {
@@ -858,6 +885,23 @@ after.filter(s => !before.has(s)).forEach(s => console.log(s));
     $script:InstalledSkills = @()
     if ($installedRaw) {
         $script:InstalledSkills = @($installedRaw -split "`n" | Where-Object { $_.Trim() })
+    }
+
+    # Check the complete post-install list so upgrades of an existing skill also
+    # install the CLI dependency. The skills installer does not run install.sh.
+    $allInstalledSkills = @()
+    try {
+        $allInstalledSkills = @(ConvertFrom-Json $afterSkills | ForEach-Object {
+            if ($_.name) { $_.name }
+            elseif ($_.skill) { $_.skill }
+            else { [string]$_ }
+        })
+    }
+    catch {
+        Write-Host "${script:WARN}Warning: Could not inspect installed skills for x402 CLI setup.${script:NC}"
+    }
+    if ($allInstalledSkills -contains "x402-payment") {
+        Install-X402Cli
     }
 
     if ($script:InstalledSkills.Count -gt 0) {

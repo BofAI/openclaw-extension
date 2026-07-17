@@ -27,7 +27,8 @@ fi
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 AGENT_WALLET_VERSION="2.3.1"
-SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.14"
+SKILLS_REPO="https://github.com/BofAI/skills/tree/x402-payment-v1.0.1-beta.6"
+X402_CLI_VERSION="1.0.1-beta.6"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
 SKILLS_GLOBAL_FLAG=""
@@ -202,7 +203,6 @@ run_clean_install() {
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}•${NC} ALL installed skills (global and workspace)"
-    echo -e "  ${WARN}•${NC} x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
     echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
     echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override --save-runtime-secrets${NC}"
     echo ""
@@ -227,7 +227,6 @@ run_clean_install() {
     node_json_reset_mcp "$MCP_CONFIG_FILE"
     npx -y skills remove -a openclaw --all -y -g </dev/null 2>/dev/null || true
     npx -y skills remove -a openclaw --all -y </dev/null 2>/dev/null || true
-    rm -f "$HOME/.x402-config.json"
     rm -f "$HOME/.mcporter/bankofai-config.json"
     echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
     echo ""
@@ -546,6 +545,38 @@ configure_tronscan_api_key() {
     echo ""
 }
 
+ensure_x402_cli() {
+    local node_major
+    local installed_version=""
+
+    node_major=$(node -p 'process.versions.node.split(".")[0]')
+    if [ "$node_major" -lt 20 ]; then
+        echo -e "${ERROR}Error: x402-payment requires Node.js v20+ (found $(node --version)).${NC}"
+        echo -e "${INFO}Upgrade Node.js, then install the CLI with:${NC}"
+        echo -e "${MUTED}npm install -g @bankofai/x402-cli@${X402_CLI_VERSION}${NC}"
+        return 1
+    fi
+
+    if command -v x402-cli >/dev/null 2>&1; then
+        installed_version=$(x402-cli --version 2>/dev/null || true)
+    fi
+    if [ "$installed_version" = "$X402_CLI_VERSION" ]; then
+        echo -e "${SUCCESS}✓ x402 CLI ${X402_CLI_VERSION} is already installed${NC}"
+        return 0
+    fi
+
+    echo -e "${MUTED}Installing @bankofai/x402-cli@${X402_CLI_VERSION}...${NC}"
+    if ! npm install --global --no-fund --no-audit "@bankofai/x402-cli@${X402_CLI_VERSION}"; then
+        echo -e "${ERROR}✗ Failed to install x402 CLI${NC}"
+        return 1
+    fi
+    command -v x402-cli >/dev/null 2>&1 || {
+        echo -e "${ERROR}✗ x402 CLI was installed but is not available on PATH${NC}"
+        return 1
+    }
+    echo -e "${SUCCESS}✓ Installed x402 CLI $(x402-cli --version)${NC}"
+}
+
 configure_skill() {
     local skill_id="$1"
 
@@ -705,7 +736,10 @@ BEFORE_SKILLS=$(npx -y skills@1.4.6 list $SKILLS_GLOBAL_FLAG -a openclaw --json 
 # Run interactive skills add — user picks skills via built-in multi-select
 echo -e "${INFO}Select skills to install in the interactive prompt below:${NC}"
 echo ""
-npx -y skills@1.4.6 add "$SKILLS_REPO" -a openclaw $SKILLS_GLOBAL_FLAG <&3 2>&1 || true
+if ! npx -y skills@1.4.6 add "$SKILLS_REPO" -a openclaw $SKILLS_GLOBAL_FLAG <&3 2>&1; then
+    echo -e "${ERROR}✗ Skills installation failed. You can try manually:${NC}"
+    echo -e "${INFO}  npx -y skills@1.4.6 add $SKILLS_REPO -a openclaw $SKILLS_GLOBAL_FLAG${NC}"
+fi
 echo ""
 
 # Snapshot after and find newly installed skills
@@ -719,6 +753,16 @@ const before = new Set(JSON.parse(process.env.BEFORE).map(s => s.name || s.skill
 const after = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
 after.filter(s => !before.has(s)).forEach(s => console.log(s));
 ')
+
+# The skills installer copies skill files but does not run their install scripts.
+# Check the complete post-install list so upgrades of an existing x402-payment
+# installation also install the matching CLI version.
+if AFTER="$AFTER_SKILLS" node -e '
+const skills = JSON.parse(process.env.AFTER).map(s => s.name || s.skill || s);
+process.exit(skills.includes("x402-payment") ? 0 : 1);
+'; then
+    ensure_x402_cli
+fi
 
 if [ ${#INSTALLED_SKILLS[@]} -gt 0 ]; then
     echo -e "${SUCCESS}✓ Installed ${#INSTALLED_SKILLS[@]} skill(s)${NC}"
