@@ -37,7 +37,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-The installer lets you choose which skills to install during setup. This beta pins the skills repository to `v1.5.15-beta.2`, which includes the CLI-based x402 payment workflow.
+The installer lets you choose which skills to install during setup. This beta pins the skills repository to `v1.5.15-beta.3`, which includes the CLI-based x402 payment workflow.
 
 The pinned skills snapshot includes:
 - `agent-wallet` - Create wallets, inspect addresses, and sign blockchain transactions or messages with the AgentWallet CLI.
@@ -53,7 +53,7 @@ The pinned skills snapshot includes:
 - `usdd-skill` - Use USDD / JUST Protocol flows including PSM swaps, vault queries, and balance checks.
 - `twitter-digest` - Generate X/Twitter daily digests, analyzing mentions, home timeline, and reply opportunities.
 - `twitter-mcp` - Install or authorize xurl for X/Twitter and generate digests from the local xurl CLI, with an optional hosted MCP bridge.
-- `x402-payment` - Pay x402-enabled agent endpoints using `@bankofai/x402-cli@1.0.1-beta.6`, including TRON Permit2 and GasFree flows.
+- `x402-payment` - Pay x402-enabled agent endpoints using `@bankofai/x402-cli@1.0.1-beta.7`, including TRON Permit2 and GasFree flows.
 
 For available skills, documentation, and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
