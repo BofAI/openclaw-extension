@@ -37,7 +37,7 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-The installer lets you choose which skills to install during setup. This beta pins the skills repository to `x402-payment-v1.0.1-beta.6` so OpenClaw can use the CLI-based x402 payment workflow.
+The installer lets you choose which skills to install during setup. This beta pins the skills repository to `v1.5.15-beta.1`, which includes the CLI-based x402 payment workflow.
 
 The pinned skills snapshot includes:
 - `agent-wallet` - Create wallets, inspect addresses, and sign blockchain transactions or messages with the AgentWallet CLI.

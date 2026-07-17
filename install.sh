@@ -27,7 +27,7 @@ fi
 MCP_CONFIG_DIR="$HOME/.mcporter"
 MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 AGENT_WALLET_VERSION="2.3.1"
-SKILLS_REPO="https://github.com/BofAI/skills/tree/x402-payment-v1.0.1-beta.6"
+SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.15-beta.1"
 X402_CLI_VERSION="1.0.1-beta.6"
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
@@ -203,6 +203,7 @@ run_clean_install() {
     echo -e "${WARN}The following data will be permanently deleted:${NC}"
     echo -e "  ${WARN}•${NC} ALL MCP entries in: ${INFO}$MCP_CONFIG_FILE${NC}"
     echo -e "  ${WARN}•${NC} ALL installed skills (global and workspace)"
+    echo -e "  ${WARN}•${NC} legacy x402 config file: ${INFO}$HOME/.x402-config.json${NC}"
     echo -e "  ${WARN}•${NC} BANK OF AI local config: ${INFO}$HOME/.mcporter/bankofai-config.json${NC}"
     echo -e "  ${WARN}•${NC} AgentWallet config will be overwritten by: ${INFO}agent-wallet start --override --save-runtime-secrets${NC}"
     echo ""
@@ -227,6 +228,7 @@ run_clean_install() {
     node_json_reset_mcp "$MCP_CONFIG_FILE"
     npx -y skills remove -a openclaw --all -y -g </dev/null 2>/dev/null || true
     npx -y skills remove -a openclaw --all -y </dev/null 2>/dev/null || true
+    rm -f "$HOME/.x402-config.json"
     rm -f "$HOME/.mcporter/bankofai-config.json"
     echo -e "${SUCCESS}✓ Clean install cleanup completed.${NC}"
     echo ""
@@ -556,6 +558,10 @@ ensure_x402_cli() {
         echo -e "${MUTED}npm install -g @bankofai/x402-cli@${X402_CLI_VERSION}${NC}"
         return 1
     fi
+    if ! command -v npm >/dev/null 2>&1; then
+        echo -e "${ERROR}Error: npm is required to install x402-payment.${NC}"
+        return 1
+    fi
 
     if command -v x402-cli >/dev/null 2>&1; then
         installed_version=$(x402-cli --version 2>/dev/null || true)
@@ -574,7 +580,12 @@ ensure_x402_cli() {
         echo -e "${ERROR}✗ x402 CLI was installed but is not available on PATH${NC}"
         return 1
     }
-    echo -e "${SUCCESS}✓ Installed x402 CLI $(x402-cli --version)${NC}"
+    installed_version=$(x402-cli --version 2>/dev/null || true)
+    if [ "$installed_version" != "$X402_CLI_VERSION" ]; then
+        echo -e "${ERROR}✗ Expected x402 CLI ${X402_CLI_VERSION}, found ${installed_version:-unknown}${NC}"
+        return 1
+    fi
+    echo -e "${SUCCESS}✓ Installed x402 CLI ${installed_version}${NC}"
 }
 
 configure_skill() {
