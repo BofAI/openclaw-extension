@@ -63,8 +63,8 @@ else {
 $script:McpConfigDir  = Join-Path $env:USERPROFILE ".mcporter"
 $script:McpConfigFile = Join-Path $script:McpConfigDir "mcporter.json"
 $script:AgentWalletVersion = "2.3.1"
-$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/v1.5.15-beta.4"
-$script:X402CliVersion = "1.0.1-beta.10"
+$script:SkillsRepo    = "https://github.com/BofAI/skills/tree/v1.5.15"
+$script:X402CliVersion = "1.0.1"
 $script:InstalledSkills = @()
 $script:CleanInstall  = $false
 $script:SkillsGlobalFlag = ""
