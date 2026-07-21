@@ -37,9 +37,9 @@ Multi-chain blockchain access for AI agents via Model Context Protocol (MCP):
 
 Pre-built workflows and tools from the **[skills repository](https://github.com/BofAI/skills)**:
 
-The installer lets you choose which skills to install during setup. By default, it installs from the pinned skills tag `v1.5.14`, which matches the current published `skills` release.
+The installer lets you choose which skills to install during setup. This release pins the skills repository to `v1.5.15`, which includes the CLI-based x402 payment workflow.
 
-Current skills in `skills@v1.5.14` include:
+The pinned skills snapshot includes:
 - `agent-wallet` - Create wallets, inspect addresses, and sign blockchain transactions or messages with the AgentWallet CLI.
 - `bankofai-guide` - Post-install onboarding guide for BofAI skills, including wallet setup and basic guardrails.
 - `multisig-permissions` - Manage TRON multi-sig permissions, thresholds, and co-signed proposals.
@@ -53,7 +53,7 @@ Current skills in `skills@v1.5.14` include:
 - `usdd-skill` - Use USDD / JUST Protocol flows including PSM swaps, vault queries, and balance checks.
 - `twitter-digest` - Generate X/Twitter daily digests, analyzing mentions, home timeline, and reply opportunities.
 - `twitter-mcp` - Install or authorize xurl for X/Twitter and generate digests from the local xurl CLI, with an optional hosted MCP bridge.
-- `x402-payment` - Pay x402-enabled agent endpoints using supported EVM or TRON stablecoins.
+- `x402-payment` - Pay x402-enabled agent endpoints using `@bankofai/x402-cli@1.0.1`, including TRON Permit2 and GasFree flows.
 
 For available skills, documentation, and usage instructions, see the [skills repository](https://github.com/BofAI/skills).
 
@@ -65,6 +65,8 @@ For available skills, documentation, and usage instructions, see the [skills rep
 - **Git** (for cloning skills repository)
 - **AgentWallet CLI v2.3.1** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 - **Windows only**: PowerShell 5.1+ (included with Windows 10/11)
+
+The `x402-payment` skill requires Node.js v20+; the installer installs and verifies its pinned x402 CLI dependency when that skill is present.
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 
