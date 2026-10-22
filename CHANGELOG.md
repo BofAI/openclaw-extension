@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Node.js Security Baseline**: Require `^22.23.4 || ^24.22.1 || >=26.12.1` in both installers, including x402 CLI setup. Reject unpatched and prerelease runtimes before installation.
 - **x402 Payment**: Pinned the installer to `skills@v1.5.15` and documented its CLI-based Permit2 and GasFree workflow.
 - **x402 CLI Dependency**: The macOS/Linux and Windows installers now install and verify `@bankofai/x402-cli@1.0.1` whenever `x402-payment` is present, including upgrades of an existing skill.
-- **Node.js Compatibility**: Added a clear Node.js v20+ requirement for `x402-payment` while preserving the extension's v18+ baseline for other skills.
 
 ## [1.4.6] - 2026-04-02
 

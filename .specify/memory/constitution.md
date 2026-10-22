@@ -66,7 +66,7 @@ and keeps the installer compatible with upstream improvements.
 
 The installer MUST NOT depend on Python for any operation. All JSON
 manipulation MUST use `node -e` one-liners or equivalent Node.js
-invocations. Node.js is already a hard prerequisite (v18+), so no
+invocations. Node.js is already a hard prerequisite (`^22.23.4 || ^24.22.1 || >=26.12.1`), so no
 additional runtime is introduced.
 
 **Rationale**: Eliminating Python removes a prerequisite that users
@@ -101,7 +101,7 @@ credentials. Leaking these has direct financial consequences.
 - **Runtime (Linux/macOS)**: Bash (POSIX-compatible with bashisms).
 - **Runtime (Windows)**: PowerShell 5.1+ (ships with Windows 10/11).
   `install.bat` is a zero-logic cmd.exe launcher.
-- **Required prerequisites**: Node.js v18+, Git, OpenClaw (pre-installed).
+- **Required prerequisites**: Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`, Git, OpenClaw (pre-installed).
 - **JSON operations**: `node -e` one-liners only. No jq, no Python, no
   external JSON tools. The same JavaScript one-liners are used on all
   platforms.
@@ -163,4 +163,4 @@ comply with these principles.
 MUST reference these principles. Any violation MUST be justified in the
 plan's Complexity Tracking table before implementation proceeds.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-03-25
+**Version**: 1.2.0 | **Ratified**: 2026-03-24 | **Last Amended**: 2026-10-22
