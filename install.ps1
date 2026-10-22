@@ -65,6 +65,7 @@ $script:McpConfigFile = Join-Path $script:McpConfigDir "mcporter.json"
 $script:AgentWalletVersion = "2.3.1"
 $script:SkillsRepo    = "https://github.com/BofAI/skills/tree/v1.5.15"
 $script:X402CliVersion = "1.0.1"
+$script:NodeRuntimeRange = '^22.23.4 || ^24.22.1 || >=26.12.1'
 $script:InstalledSkills = @()
 $script:CleanInstall  = $false
 $script:SkillsGlobalFlag = ""
@@ -374,26 +375,26 @@ function Show-MultiSelect {
 
 # --- Pre-flight Checks ---
 
+function Assert-NodeRuntime {
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+        throw "Node.js $($script:NodeRuntimeRange) is required. Install it from https://nodejs.org/"
+    }
+    & node -e @'
+        const version = process.versions.node;
+        const [major, minor, patch] = version.split('.').map(Number);
+        const minimum = major === 22 ? [23, 4] : major === 24 ? [22, 1] : major === 26 ? [12, 1] : null;
+        const supported = /^\d+\.\d+\.\d+$/.test(version) && (
+            major > 26 || (minimum && (minor > minimum[0] || (minor === minimum[0] && patch >= minimum[1])))
+        );
+        process.exit(supported ? 0 : 1);
+'@
+    if ($LASTEXITCODE -ne 0) {
+        throw "Node.js $($script:NodeRuntimeRange) is required (found $(node --version))."
+    }
+}
+
 function Test-Environment {
-    # Check Node.js
-    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-    if (-not $nodeCmd) {
-        throw "Node.js is not installed. Please install Node.js v18+ from https://nodejs.org/"
-    }
-    # Check Node.js version >= 18
-    try {
-        $nodeVersion = (node --version) -replace '^v', ''
-        $major = [int]($nodeVersion -split '\.')[0]
-        if ($major -lt 18) {
-            throw "Node.js v18+ is required (found v${nodeVersion})."
-        }
-    }
-    catch [System.Management.Automation.RuntimeException] {
-        throw
-    }
-    catch {
-        Write-Host "${script:WARN}Warning: Could not determine Node.js version.${script:NC}"
-    }
+    Assert-NodeRuntime
 
     # Check npx
     if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) {
@@ -644,13 +645,9 @@ function Set-TronscanApiKeyConfig {
 }
 
 function Install-X402Cli {
-    $nodeVersion = (node --version) -replace '^v', ''
-    $nodeMajor = [int]($nodeVersion -split '\.')[0]
-    if ($nodeMajor -lt 20) {
-        throw "x402-payment requires Node.js v20+ (found v${nodeVersion}). Upgrade Node.js, then install @bankofai/x402-cli@$($script:X402CliVersion)."
-    }
+    Assert-NodeRuntime
     if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
-        throw "npm is required to install x402-payment. It ships with Node.js 20+."
+        throw "npm is required to install x402-payment. It ships with Node.js."
     }
 
     $installedVersion = ""

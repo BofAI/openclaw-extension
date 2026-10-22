@@ -61,12 +61,12 @@ For available skills, documentation, and usage instructions, see the [skills rep
 
 ### Prerequisites
 - **OpenClaw** (Your personal, open-source AI assistant) - [Install from here](https://github.com/openclaw)
-- **Node.js** (v18+)
+- **Node.js** `^22.23.4 || ^24.22.1 || >=26.12.1`
 - **Git** (for cloning skills repository)
 - **AgentWallet CLI v2.3.1** (installer enforces this version, docs: [agent-wallet README](https://github.com/BofAI/agent-wallet/blob/main/README.md))
 - **Windows only**: PowerShell 5.1+ (included with Windows 10/11)
 
-The `x402-payment` skill requires Node.js v20+; the installer installs and verifies its pinned x402 CLI dependency when that skill is present.
+The same Node.js requirement applies to all skills, including `x402-payment`. Both installers reject unpatched and prerelease runtimes before installation. The installer installs and verifies its pinned x402 CLI dependency when that skill is present.
 
 **Note**: This installer uses OpenClaw's configuration system. Make sure OpenClaw is installed before running this installer.
 

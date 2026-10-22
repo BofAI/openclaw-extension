@@ -29,6 +29,7 @@ MCP_CONFIG_FILE="$MCP_CONFIG_DIR/mcporter.json"
 AGENT_WALLET_VERSION="2.3.1"
 SKILLS_REPO="https://github.com/BofAI/skills/tree/v1.5.15"
 X402_CLI_VERSION="1.0.1"
+NODE_RUNTIME_RANGE='^22.23.4 || ^24.22.1 || >=26.12.1'
 INSTALLED_SKILLS=()
 CLEAN_INSTALL=false
 SKILLS_GLOBAL_FLAG=""
@@ -61,11 +62,27 @@ TAGLINE=$(pick_tagline)
 
 # --- Pre-flight Checks ---
 
-check_env() {
+check_node_runtime() {
     if ! command -v node &> /dev/null; then
-        echo -e "${ERROR}Error: Node.js is not installed.${NC}"
-        exit 1
+        echo -e "${ERROR}Error: Node.js ${NODE_RUNTIME_RANGE} is required.${NC}" >&2
+        return 1
     fi
+    if ! node -e '
+        const version = process.versions.node;
+        const [major, minor, patch] = version.split(".").map(Number);
+        const minimum = major === 22 ? [23, 4] : major === 24 ? [22, 1] : major === 26 ? [12, 1] : null;
+        const supported = /^\d+\.\d+\.\d+$/.test(version) && (
+            major > 26 || (minimum && (minor > minimum[0] || (minor === minimum[0] && patch >= minimum[1])))
+        );
+        process.exit(supported ? 0 : 1);
+    '; then
+        echo -e "${ERROR}Error: Node.js ${NODE_RUNTIME_RANGE} is required (found $(node --version)).${NC}" >&2
+        return 1
+    fi
+}
+
+check_env() {
+    check_node_runtime || return 1
     if ! command -v npx &> /dev/null; then
         echo -e "${ERROR}Error: 'npx' is not found.${NC}"
         exit 1
@@ -548,16 +565,9 @@ configure_tronscan_api_key() {
 }
 
 ensure_x402_cli() {
-    local node_major
     local installed_version=""
 
-    node_major=$(node -p 'process.versions.node.split(".")[0]')
-    if [ "$node_major" -lt 20 ]; then
-        echo -e "${ERROR}Error: x402-payment requires Node.js v20+ (found $(node --version)).${NC}"
-        echo -e "${INFO}Upgrade Node.js, then install the CLI with:${NC}"
-        echo -e "${MUTED}npm install -g @bankofai/x402-cli@${X402_CLI_VERSION}${NC}"
-        return 1
-    fi
+    check_node_runtime || return 1
     if ! command -v npm >/dev/null 2>&1; then
         echo -e "${ERROR}Error: npm is required to install x402-payment.${NC}"
         return 1

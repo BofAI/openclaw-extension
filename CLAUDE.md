@@ -28,6 +28,15 @@ Lint check:
 shellcheck install.sh
 ```
 
+Runtime version regression tests (no installation or npm mutations):
+
+```bash
+node --test tests/node-runtime.test.mjs
+# Set PWSH=/path/to/pwsh if PowerShell is not on PATH.
+```
+
+The tests skip PowerShell cases when PowerShell is unavailable.
+
 ### Windows
 
 ```powershell
@@ -85,7 +94,7 @@ The installer runs in phases:
 
 ### Prerequisites (installer enforces these)
 
-- Node.js v18+
+- Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`
 - Git
 - OpenClaw (pre-installed)
 - AgentWallet CLI v2.3.1
@@ -106,9 +115,9 @@ The installer runs in phases:
 `bnbchain-mcp` currently requires a raw `PRIVATE_KEY` env var and is **not** AgentWallet-compatible. This is a known limitation.
 
 ## Active Technologies
-- Bash (POSIX-compatible with bashisms) + `add-mcp@1.5.1` (via npx), `skills@1.4.6` (via npx), Node.js v18+ (001-npx-skill-mcp-add)
+- Bash (POSIX-compatible with bashisms) + `add-mcp@1.5.1` (via npx), `skills@1.4.6` (via npx), Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` (001-npx-skill-mcp-add)
 - JSON config files (`~/.mcporter/mcporter.json`, `~/.x402-config.json`, `~/.mcporter/bankofai-config.json`) (001-npx-skill-mcp-add)
-- PowerShell 5.1+ (ships with Windows 10/11), cmd batch for launcher + Node.js v18+ (npx), Git, AgentWallet CLI v2.3.1, add-mcp@1.5.1, skills@1.4.6 (002-windows-installer)
+- PowerShell 5.1+ (ships with Windows 10/11), cmd batch for launcher + Node.js `^22.23.4 || ^24.22.1 || >=26.12.1` (npx), Git, AgentWallet CLI v2.3.1, add-mcp@1.5.1, skills@1.4.6 (002-windows-installer)
 - JSON config files in `%USERPROFILE%\.mcporter\` and `%USERPROFILE%\` (002-windows-installer)
 
 ## Recent Changes
